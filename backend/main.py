@@ -30,6 +30,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 CLIPS_DIR = os.path.join(BASE_DIR, "clips")
 SNAPSHOTS_DIR = os.path.join(BASE_DIR, "snapshots")
 FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
+os.makedirs(CLIPS_DIR, exist_ok=True)
+os.makedirs(SNAPSHOTS_DIR, exist_ok=True)
 
 Base.metadata.create_all(bind=engine)
 
