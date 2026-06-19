@@ -24,17 +24,13 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from detector.buffer import RollingBuffer
-from detector.fall_detector import FallDetector
+from detector.fall_detector import FallDetector, POSE_CONNECTIONS
 
 BACKEND_URL = os.environ.get("BIKA_BACKEND", "http://127.0.0.1:8000")
 CLIPS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "clips")
 SNAPSHOTS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "snapshots")
 os.makedirs(CLIPS_DIR, exist_ok=True)
 os.makedirs(SNAPSHOTS_DIR, exist_ok=True)
-
-MP_POSE = mp.solutions.pose
-MP_DRAWING = mp.solutions.drawing_utils
-MP_DRAWING_STYLES = mp.solutions.drawing_styles
 
 
 def draw_overlay(frame, angle, is_fallen, event_fired):
@@ -134,14 +130,18 @@ def run(source, camera_id: str, show_window: bool):
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         result = detector.process(frame_rgb)
 
-        # Draw pose skeleton
+        # Draw pose skeleton manually (Tasks API has no drawing_utils)
         if result["landmarks"]:
-            MP_DRAWING.draw_landmarks(
-                frame,
-                result["landmarks"],
-                MP_POSE.POSE_CONNECTIONS,
-                landmark_drawing_spec=MP_DRAWING_STYLES.get_default_pose_landmarks_style(),
-            )
+            h, w = frame.shape[:2]
+            lm = result["landmarks"]
+            for a, b in POSE_CONNECTIONS:
+                if a < len(lm) and b < len(lm):
+                    x1, y1 = int(lm[a].x * w), int(lm[a].y * h)
+                    x2, y2 = int(lm[b].x * w), int(lm[b].y * h)
+                    cv2.line(frame, (x1, y1), (x2, y2), (0, 200, 100), 2)
+            for pt in lm:
+                cx, cy = int(pt.x * w), int(pt.y * h)
+                cv2.circle(frame, (cx, cy), 4, (255, 255, 255), -1)
 
         # Add to rolling buffer
         buffer.add(frame)
