@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bika AI — Zones</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+         background: #0f1117; color: #e2e8f0; min-height: 100vh; }
+  header { background: #1a1d27; border-bottom: 1px solid #2d3148; padding: 14px 28px;
+           display: flex; align-items: center; gap: 16px; }
+  .logo { font-size: 1.3rem; font-weight: 700; color: #fff; }
+  .logo span { color: #6366f1; }
+  nav { display: flex; gap: 6px; margin-left: 8px; }
+  nav a { color: #94a3b8; text-decoration: none; font-size: 0.85rem; padding: 5px 12px;
+          border-radius: 6px; border: 1px solid #2d3148; }
+  nav a.active { color: #fff; background: #6366f1; border-color: #6366f1; }
+
+  .wrap { padding: 24px 28px; display: grid; grid-template-columns: 1fr 280px; gap: 24px; }
+  .panel { background: #1a1d27; border: 1px solid #2d3148; border-radius: 12px; padding: 16px; }
+  .panel h3 { font-size: 0.95rem; margin-bottom: 12px; color: #fff; }
+
+  .camera-select { margin-bottom: 16px; }
+  select { width: 100%; background: #0f1117; border: 1px solid #2d3148; color: #e2e8f0;
+           border-radius: 6px; padding: 8px 10px; font-size: 0.85rem; }
+
+  .stage { position: relative; background: #0a0b0f; border-radius: 8px; overflow: hidden;
+           display: flex; align-items: center; justify-content: center; min-height: 300px; }
+  .stage img { width: 100%; display: block; }
+  #overlay { position: absolute; top: 0; left: 0; cursor: crosshair; }
+  .hint { color: #64748b; font-size: 0.82rem; margin-top: 10px; }
+  .no-snap { color: #475569; padding: 60px; text-align: center; font-size: 0.9rem; }
+
+  .zone-item { background: #0f1117; border: 1px solid #2d3148; border-radius: 7px;
+               padding: 10px; margin-bottom: 8px; display: flex; justify-content: space-between;
+               align-items: center; }
+  .zone-item .zn { font-weight: 600; font-size: 0.88rem; }
+  .zone-item .zc { color: #64748b; font-size: 0.72rem; }
+  .del-btn { background: #450a0a; color: #f87171; border: none; border-radius: 5px;
+             padding: 4px 10px; cursor: pointer; font-size: 0.78rem; }
+  .del-btn:hover { background: #7f1d1d; }
+  .empty-z { color: #475569; font-size: 0.85rem; text-align: center; padding: 20px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Bika<span>AI</span></div>
+  <nav>
+    <a href="/">Review</a>
+    <a href="/zones" class="active">Zones</a>
+  </nav>
+</header>
+
+<div class="wrap">
+  <div class="panel">
+    <div class="camera-select">
+      <h3>Camera</h3>
+      <select id="cam-select" onchange="onCamChange()"></select>
+    </div>
+    <div class="stage" id="stage">
+      <div class="no-snap" id="no-snap">No camera snapshot yet. Start the detector — it pushes a live frame every few seconds.</div>
+      <img id="snap" style="display:none;" />
+      <canvas id="overlay"></canvas>
+    </div>
+    <div class="hint">Click and drag on the image to draw a zone. You'll be asked to name it.</div>
+  </div>
+
+  <div class="panel">
+    <h3>Zones on this camera</h3>
+    <div id="zone-list"><div class="empty-z">No zones yet.</div></div>
+  </div>
+</div>
+
+<script>
+const API = '';
+let currentCam = null;
+let zones = [];
+let img = document.getElementById('snap');
+let canvas = document.getElementById('overlay');
+let ctx = canvas.getContext('2d');
+let drawing = false, startX = 0, startY = 0, curX = 0, curY = 0;
+
+async function loadCameras() {
+  const r = await fetch(`${API}/cameras`);
+  const d = await r.json();
+  const sel = document.getElementById('cam-select');
+  if (!d.cameras.length) {
+    sel.innerHTML = '<option>No cameras yet — start the detector</option>';
+    return;
+  }
+  sel.innerHTML = d.cameras.map(c => `<option value="${c.camera_id}">${c.camera_id}</option>`).join('');
+  currentCam = d.cameras[0].camera_id;
+  onCamChange();
+}
+
+function onCamChange() {
+  currentCam = document.getElementById('cam-select').value;
+  loadSnapshot();
+  loadZones();
+}
+
+function loadSnapshot() {
+  const url = `${API}/cameras/${currentCam}/snapshot?t=${Date.now()}`;
+  const probe = new Image();
+  probe.onload = () => {
+    img.src = url;
+    img.style.display = 'block';
+    document.getElementById('no-snap').style.display = 'none';
+    img.onload = () => sizeCanvas();
+  };
+  probe.onerror = () => {
+    img.style.display = 'none';
+    document.getElementById('no-snap').style.display = 'block';
+    canvas.width = 0; canvas.height = 0;
+  };
+  probe.src = url;
+}
+
+function sizeCanvas() {
+  canvas.width = img.clientWidth;
+  canvas.height = img.clientHeight;
+  canvas.style.width = img.clientWidth + 'px';
+  canvas.style.height = img.clientHeight + 'px';
+  redraw();
+}
+window.addEventListener('resize', () => { if (img.style.display !== 'none') sizeCanvas(); });
+
+async function loadZones() {
+  const r = await fetch(`${API}/cameras/${currentCam}/zones`);
+  const d = await r.json();
+  zones = d.zones || [];
+  renderZoneList();
+  redraw();
+}
+
+function renderZoneList() {
+  const el = document.getElementById('zone-list');
+  if (!zones.length) { el.innerHTML = '<div class="empty-z">No zones yet.</div>'; return; }
+  el.innerHTML = zones.map(z => `
+    <div class="zone-item">
+      <div>
+        <div class="zn">${z.name}</div>
+        <div class="zc">${Math.round(z.x1*100)},${Math.round(z.y1*100)} → ${Math.round(z.x2*100)},${Math.round(z.y2*100)}</div>
+      </div>
+      <button class="del-btn" onclick="deleteZone(${z.id})">Delete</button>
+    </div>`).join('');
+}
+
+function redraw() {
+  if (!canvas.width) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // existing zones
+  zones.forEach((z, i) => {
+    const x = z.x1 * canvas.width, y = z.y1 * canvas.height;
+    const w = (z.x2 - z.x1) * canvas.width, h = (z.y2 - z.y1) * canvas.height;
+    ctx.strokeStyle = '#6366f1'; ctx.lineWidth = 2;
+    ctx.strokeRect(x, y, w, h);
+    ctx.fillStyle = 'rgba(99,102,241,0.15)';
+    ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = '#c7d2fe'; ctx.font = '13px sans-serif';
+    ctx.fillText(z.name, x + 4, y + 16);
+  });
+  // current drag
+  if (drawing) {
+    ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 2;
+    ctx.setLineDash([5, 4]);
+    ctx.strokeRect(startX, startY, curX - startX, curY - startY);
+    ctx.setLineDash([]);
+  }
+}
+
+canvas.addEventListener('mousedown', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  startX = e.clientX - rect.left; startY = e.clientY - rect.top;
+  curX = startX; curY = startY; drawing = true;
+});
+canvas.addEventListener('mousemove', (e) => {
+  if (!drawing) return;
+  const rect = canvas.getBoundingClientRect();
+  curX = e.clientX - rect.left; curY = e.clientY - rect.top;
+  redraw();
+});
+canvas.addEventListener('mouseup', async (e) => {
+  if (!drawing) return;
+  drawing = false;
+  const w = Math.abs(curX - startX), h = Math.abs(curY - startY);
+  if (w < 12 || h < 12) { redraw(); return; }  // ignore tiny drags
+  const name = prompt('Name this zone (e.g. Playground, Hallway, Nap area):');
+  if (!name) { redraw(); return; }
+  const x1 = Math.min(startX, curX) / canvas.width;
+  const y1 = Math.min(startY, curY) / canvas.height;
+  const x2 = Math.max(startX, curX) / canvas.width;
+  const y2 = Math.max(startY, curY) / canvas.height;
+  await fetch(`${API}/cameras/${currentCam}/zones`, {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ name, x1, y1, x2, y2 }),
+  });
+  loadZones();
+});
+
+async function deleteZone(id) {
+  await fetch(`${API}/zones/${id}`, { method: 'DELETE' });
+  loadZones();
+}
+
+loadCameras();
+// keep snapshot fresh
+setInterval(() => { if (currentCam) loadSnapshot(); }, 8000);
+</script>
+</body>
+</html>
