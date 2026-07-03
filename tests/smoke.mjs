@@ -66,7 +66,7 @@ await check("неверный пароль отклоняется", async () => 
   await page.fill('input[autocomplete="username"]', "magazin-baraka");
   await page.fill('input[type="password"]', "wrong");
   await page.click('button[type="submit"]');
-  await page.waitForSelector("text=Неверный логин или пароль", { timeout: 10000 });
+  await page.locator("text=Неверный логин или пароль").waitFor({ timeout: 10000 });
 });
 
 console.log("\n— Покупатель: каталог и заказ —");
@@ -76,13 +76,13 @@ let orderNumber = null;
 await check("каталог показывает товары обоих дистрибьюторов", async () => {
   await login(page, "magazin-baraka", "buyer123");
   await page.goto(`${BASE}/shop/catalog`);
-  await page.waitForSelector("text=Молоко 1л");
-  await page.waitForSelector("text=Сок яблочный");
+  await page.locator("text=Молоко 1л").waitFor();
+  await page.locator("text=Сок яблочный").waitFor();
 });
 
 await check("поиск фильтрует каталог", async () => {
   await page.fill('input[type="search"]', "Кефир");
-  await page.waitForSelector("text=Кефир 0.5л", { timeout: 10000 });
+  await page.locator("text=Кефир 0.5л").waitFor({ timeout: 10000 });
   await page.waitForTimeout(600); // debounce + rerender
   const milk = await page.locator("text=Молоко 1л").count();
   if (milk > 0) throw new Error("Молоко всё ещё в выдаче");
@@ -94,7 +94,7 @@ await check("поиск фильтрует каталог", async () => {
 async function addProductToCart(name) {
   await page.goto(`${BASE}/shop/catalog?q=${encodeURIComponent(name)}`);
   await page.locator(`a:has-text("${name}")`).first().click();
-  await page.waitForSelector('button:has-text("В корзину")');
+  await page.locator("button:has-text(\"В корзину\")").waitFor();
   await page.click('button:has-text("В корзину")');
   await page.waitForTimeout(300);
 }
@@ -106,25 +106,25 @@ await check("добавление в корзину (2 товара разных
 
 await check("оформление заказа (сплит по дистрибьюторам)", async () => {
   await page.goto(`${BASE}/shop/cart`);
-  await page.waitForSelector("text=Оформление заказа");
+  await page.locator("text=Оформление заказа").waitFor();
   await page.fill('input[placeholder="Город, улица, дом"]', "г. Ташкент, ул. Навои 12");
   await page.fill("textarea", "Тестовый заказ — привезите утром");
   await page.click('button:has-text("Оформить заказ")');
-  await page.waitForSelector("text=Заказ оформлен", { timeout: 15000 });
+  await page.locator("text=Заказ оформлен").waitFor({ timeout: 15000 });
 });
 
 await check("история заказов показывает новые заказы", async () => {
   await page.goto(`${BASE}/shop/orders`);
-  await page.waitForSelector("text=Заказ №");
+  await page.locator("text=Заказ №").waitFor();
   const first = await page.locator("text=/Заказ №\\d+/").first().textContent();
   orderNumber = first.match(/№(\d+)/)[1];
-  await page.waitForSelector("text=Новый");
+  await page.locator("text=Новый").waitFor();
 });
 
 await check("детали заказа открываются", async () => {
   await page.locator("a:has-text('Заказ №')").first().click();
-  await page.waitForSelector("text=Итого");
-  await page.waitForSelector("text=Доставка");
+  await page.locator("text=Итого").waitFor();
+  await page.locator("text=Доставка").waitFor();
 });
 
 console.log("\n— Дистрибьютор: обработка заказа —");
@@ -137,19 +137,19 @@ await check("логин дистрибьютора ведёт в /distributor", 
 
 await check("новый заказ виден в списке заказов", async () => {
   await page.goto(`${BASE}/distributor/orders`);
-  await page.waitForSelector("text=Магазин Барака");
-  await page.waitForSelector("text=Новый");
+  await page.locator("text=Магазин Барака").waitFor();
+  await page.locator("text=Новый").waitFor();
 });
 
 await check("статус: Новый → Подтверждён → Отправлен → Доставлен", async () => {
   await page.locator("tbody tr").first().locator("a").first().click();
-  await page.waitForSelector("text=Управление статусом");
+  await page.locator("text=Управление статусом").waitFor();
   await page.click('button:has-text("Подтверждён")');
-  await page.waitForSelector('span:has-text("Подтверждён")', { timeout: 10000 });
+  await page.locator("span:has-text(\"Подтверждён\")").waitFor({ timeout: 10000 });
   await page.click('button:has-text("Отправлен")');
-  await page.waitForSelector('span:has-text("Отправлен")', { timeout: 10000 });
+  await page.locator("span:has-text(\"Отправлен\")").waitFor({ timeout: 10000 });
   await page.click('button:has-text("Доставлен")');
-  await page.waitForSelector("text=Заказ доставлен", { timeout: 10000 });
+  await page.locator("text=Заказ доставлен").waitFor({ timeout: 10000 });
 });
 
 await check("дистрибьютор может добавить товар", async () => {
@@ -158,12 +158,12 @@ await check("дистрибьютор может добавить товар", a
   await page.fill('input[placeholder*="Молоко"]', "Ряженка 0.5л (тест)");
   await page.fill('input[placeholder="0"]', "9500");
   await page.click('button:has-text("Сохранить")');
-  await page.waitForSelector("text=Ряженка 0.5л (тест)", { timeout: 10000 });
+  await page.locator("text=Ряженка 0.5л (тест)").waitFor({ timeout: 10000 });
 });
 
 await check("список покупателей содержит заказчика", async () => {
   await page.goto(`${BASE}/distributor/buyers`);
-  await page.waitForSelector("text=Магазин Барака");
+  await page.locator("text=Магазин Барака").waitFor();
 });
 
 await check("CSV экспорт отдаёт файл", async () => {
@@ -179,19 +179,19 @@ await check("покупатель видит статус «Доставлен»
   await logout(page);
   await login(page, "magazin-baraka", "buyer123");
   await page.goto(`${BASE}/shop/orders`);
-  await page.waitForSelector("text=Доставлен");
+  await page.locator("text=Доставлен").waitFor();
 });
 
 await check("новый товар дистрибьютора виден в каталоге", async () => {
   await page.goto(`${BASE}/shop/catalog`);
   await page.fill('input[type="search"]', "Ряженка");
-  await page.waitForSelector("text=Ряженка 0.5л (тест)", { timeout: 10000 });
+  await page.locator("text=Ряженка 0.5л (тест)").waitFor({ timeout: 10000 });
 });
 
 await check("блок «Подсказки Bika» с прогрессом обучения", async () => {
   await page.goto(`${BASE}/shop`);
-  await page.waitForSelector("text=Подсказки Bika");
-  await page.waitForSelector("text=/\\d+\\/10 заказов/");
+  await page.locator("text=Подсказки Bika").waitFor();
+  await page.locator("text=/\\d+\\/10 заказов/").waitFor();
 });
 
 console.log("\n— Ещё 2 заказа → появляются рекомендации —");
@@ -202,14 +202,14 @@ await check("делаем ещё 2 заказа (3+ для рекомендац�
     await page.goto(`${BASE}/shop/cart`);
     await page.fill('input[placeholder="Город, улица, дом"]', "г. Ташкент, ул. Навои 12");
     await page.click('button:has-text("Оформить заказ")');
-    await page.waitForSelector("text=Заказ оформлен", { timeout: 15000 });
+    await page.locator("text=Заказ оформлен").waitFor({ timeout: 15000 });
   }
 });
 
 await check("рекомендации «вам может понадобиться» на главной", async () => {
   await page.goto(`${BASE}/shop`);
-  await page.waitForSelector("text=вам может понадобиться");
-  await page.waitForSelector("text=Молоко 1л");
+  await page.locator("text=вам может понадобиться").waitFor();
+  await page.locator("text=Молоко 1л").waitFor();
 });
 
 console.log("\n— Админ: полный контроль —");
@@ -221,16 +221,16 @@ await check("логин админа ведёт в /admin", async () => {
 });
 
 await check("дашборд показывает статистику и топ товаров", async () => {
-  await page.waitForSelector("text=Заказов всего");
-  await page.waitForSelector("text=Топ товаров");
-  await page.waitForSelector("text=Молоко 1л");
+  await page.locator("text=Заказов всего").waitFor();
+  await page.locator("text=Топ товаров").waitFor();
+  await page.locator("text=Молоко 1л").waitFor();
 });
 
 await check("все заказы видны с фильтром по статусу", async () => {
   await page.goto(`${BASE}/admin/orders`);
-  await page.waitForSelector("text=Магазин Барака");
+  await page.locator("text=Магазин Барака").waitFor();
   await page.goto(`${BASE}/admin/orders?status=DELIVERED`);
-  await page.waitForSelector("text=Доставлен");
+  await page.locator("text=Доставлен").waitFor();
 });
 
 await check("админ создаёт пользователя с паролем", async () => {
@@ -241,7 +241,7 @@ await check("админ создаёт пользователя с пароле�
   await page.fill('input[placeholder="Имя Фамилия"]', "Тест Тестов");
   await page.fill('input[placeholder="Магазин / Компания"]', "Тестовый Магазин");
   await page.click('button:has-text("Сохранить")');
-  await page.waitForSelector("text=Тестовый Магазин", { timeout: 10000 });
+  await page.locator("text=Тестовый Магазин").waitFor({ timeout: 10000 });
 });
 
 await check("созданный пользователь может войти", async () => {
@@ -252,15 +252,15 @@ await check("созданный пользователь может войти",
 
 await check("новый покупатель видит пустое состояние (изоляция данных)", async () => {
   await page.goto(`${BASE}/shop/orders`);
-  await page.waitForSelector("text=Заказов пока нет");
+  await page.locator("text=Заказов пока нет").waitFor();
 });
 
 await check("журнал активности фиксирует действия", async () => {
   await logout(page);
   await login(page, "admin", "admin123");
   await page.goto(`${BASE}/admin/activity`);
-  await page.waitForSelector("text=Создан пользователь");
-  await page.waitForSelector("text=Изменён статус заказа");
+  await page.locator("text=Создан пользователь").waitFor();
+  await page.locator("text=Изменён статус заказа").waitFor();
 });
 
 await browser.close();
