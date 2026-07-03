@@ -1,0 +1,132 @@
+// Bika — B2B ordering platform
+// Prices are stored as integer UZS (no fractional soums in practice).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  DISTRIBUTOR
+  BUYER
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum Unit {
+  PIECE
+  KG
+  LITER
+  BOX
+  PACK
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  role         Role
+  // Contact person / display name
+  name         String
+  // Store or company name (for buyers and distributors)
+  businessName String?
+  phone        String?
+  address      String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  products            Product[]     @relation("DistributorProducts")
+  ordersAsBuyer       Order[]       @relation("BuyerOrders")
+  ordersAsDistributor Order[]       @relation("DistributorOrders")
+  activities          ActivityLog[]
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  products Product[]
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  // Integer UZS
+  price       Int
+  unit        Unit     @default(PIECE)
+  // null = stock not tracked
+  stock       Int?
+  imageUrl    String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  categoryId    String?
+  category      Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  distributorId String
+  distributor   User      @relation("DistributorProducts", fields: [distributorId], references: [id], onDelete: Cascade)
+
+  orderItems OrderItem[]
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  number          Int         @unique @default(autoincrement())
+  status          OrderStatus @default(PENDING)
+  notes           String?
+  deliveryAddress String
+  // Integer UZS
+  total           Int
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  buyerId       String
+  buyer         User   @relation("BuyerOrders", fields: [buyerId], references: [id], onDelete: Cascade)
+  distributorId String
+  distributor   User   @relation("DistributorOrders", fields: [distributorId], references: [id], onDelete: Cascade)
+
+  items OrderItem[]
+}
+
+model OrderItem {
+  id String @id @default(cuid())
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  // Product reference is optional so history survives product deletion —
+  // name/price/unit are snapshotted at order time.
+  productId   String?
+  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productName String
+  unit        Unit
+  price       Int
+  quantity    Int
+  subtotal    Int
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  // Snapshot so the log stays readable after user deletion
+  username  String
+  action    String
+  details   String?
+  createdAt DateTime @default(now())
+}
+
+model Setting {
+  key   String @id
+  value String
+}
