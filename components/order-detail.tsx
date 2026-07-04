@@ -53,7 +53,7 @@ export function OrderDetail({
         <StatusBadge status={order.status} />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <Card>
             <ul className="divide-y divide-neutral-50">

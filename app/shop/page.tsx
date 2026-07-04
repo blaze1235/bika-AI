@@ -4,8 +4,9 @@ import { requireRole } from "@/lib/auth";
 import { Card } from "@/components/ui";
 import { StatusBadge } from "@/components/status-badge";
 import { ProductCard, type CatalogProduct } from "@/components/product-card";
-import { money, formatDate, formatDateTime } from "@/lib/format";
-import { ArrowRight, Sparkles, History } from "lucide-react";
+import { RepeatOrderButton, type RepeatItem } from "@/components/repeat-order";
+import { money, formatDate, formatDateTime, UNIT_LABELS } from "@/lib/format";
+import { ArrowRight, Sparkles, History, RotateCcw } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -14,38 +15,55 @@ const LEARNING_TARGET = 10;
 /** Orders needed before showing the recommendation list. */
 const MIN_ORDERS_FOR_SUGGESTIONS = 3;
 
+const CATEGORY_EMOJI: Record<string, string> = {
+  "Напитки": "🥤",
+  "Молочные продукты": "🥛",
+  "Бакалея": "🌾",
+  "Снеки": "🍿",
+  "Бытовая химия": "🧼",
+  "Кондитерские изделия": "🍪",
+};
+
 export default async function ShopHome() {
   const session = await requireRole("BUYER");
   const buyerId = session.userId;
 
-  const [user, orderCount, spent, lastOrder, frequentItems] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: buyerId },
-      select: { name: true, businessName: true },
-    }),
-    prisma.order.count({ where: { buyerId, status: { not: "CANCELLED" } } }),
-    prisma.order.aggregate({
-      _sum: { total: true },
-      where: { buyerId, status: { not: "CANCELLED" } },
-    }),
-    prisma.order.findFirst({
-      where: { buyerId },
-      orderBy: { createdAt: "desc" },
-      include: { items: true, distributor: { select: { businessName: true, name: true } } },
-    }),
-    // Frequently ordered products across all non-cancelled orders
-    prisma.orderItem.groupBy({
-      by: ["productId"],
-      where: {
-        order: { buyerId, status: { not: "CANCELLED" } },
-        productId: { not: null },
-      },
-      _sum: { quantity: true },
-      _count: true,
-      orderBy: { _count: { productId: "desc" } },
-      take: 8,
-    }),
-  ]);
+  const [user, orderCount, spent, lastOrder, frequentItems, categories] =
+    await Promise.all([
+      prisma.user.findUnique({
+        where: { id: buyerId },
+        select: { name: true, businessName: true },
+      }),
+      prisma.order.count({ where: { buyerId, status: { not: "CANCELLED" } } }),
+      prisma.order.aggregate({
+        _sum: { total: true },
+        where: { buyerId, status: { not: "CANCELLED" } },
+      }),
+      prisma.order.findFirst({
+        where: { buyerId },
+        orderBy: { createdAt: "desc" },
+        include: {
+          items: true,
+          distributor: { select: { businessName: true, name: true } },
+        },
+      }),
+      // Frequently ordered products across all non-cancelled orders
+      prisma.orderItem.groupBy({
+        by: ["productId"],
+        where: {
+          order: { buyerId, status: { not: "CANCELLED" } },
+          productId: { not: null },
+        },
+        _sum: { quantity: true },
+        _count: true,
+        orderBy: { _count: { productId: "desc" } },
+        take: 8,
+      }),
+      prisma.category.findMany({
+        orderBy: { name: "asc" },
+        where: { products: { some: { active: true, distributor: { active: true } } } },
+      }),
+    ]);
 
   // Resolve frequent items to live products (available ones only)
   const frequentIds = frequentItems
@@ -82,13 +100,48 @@ export default async function ShopHome() {
       categoryName: p.category?.name ?? null,
     }));
 
+  // Live products for the last order → one-tap reorder
+  let repeatItems: RepeatItem[] = [];
+  if (lastOrder) {
+    const ids = lastOrder.items
+      .map((i) => i.productId)
+      .filter((id): id is string => id !== null);
+    if (ids.length > 0) {
+      const live = await prisma.product.findMany({
+        where: { id: { in: ids }, active: true, distributor: { active: true } },
+        include: {
+          distributor: { select: { id: true, businessName: true, name: true } },
+        },
+      });
+      repeatItems = lastOrder.items.flatMap((item) => {
+        const p = live.find((x) => x.id === item.productId);
+        if (!p) return [];
+        return [
+          {
+            product: {
+              productId: p.id,
+              name: p.name,
+              price: p.price,
+              unit: UNIT_LABELS[p.unit],
+              imageUrl: p.imageUrl,
+              distributorId: p.distributor.id,
+              distributorName: p.distributor.businessName ?? p.distributor.name,
+              stock: p.stock,
+            },
+            qty: item.quantity,
+          },
+        ];
+      });
+    }
+  }
+
   const learningProgress = Math.min(orderCount, LEARNING_TARGET);
   const greeting = user?.businessName ?? user?.name ?? "";
 
   return (
     <>
-      {/* Greeting + quick stats */}
-      <div className="mb-6">
+      {/* Greeting */}
+      <div className="mb-5">
         <h1 className="text-2xl font-bold tracking-tight text-neutral-900">
           Здравствуйте{greeting ? `, ${greeting}` : ""}!
         </h1>
@@ -97,36 +150,90 @@ export default async function ShopHome() {
         </p>
       </div>
 
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <Card className="p-4">
+      {/* Compact stat strip */}
+      <Card className="mb-5 grid grid-cols-3 divide-x divide-neutral-100">
+        <div className="px-4 py-3">
           <p className="text-xs text-neutral-400">Всего заказов</p>
-          <p className="mt-1 text-xl font-bold text-neutral-900">{orderCount}</p>
-        </Card>
-        <Card className="p-4">
+          <p className="mt-0.5 text-lg font-bold text-neutral-900">{orderCount}</p>
+        </div>
+        <div className="px-4 py-3">
           <p className="text-xs text-neutral-400">Сумма покупок</p>
-          <p className="mt-1 text-xl font-bold text-neutral-900">
+          <p className="mt-0.5 text-sm font-bold leading-6 text-neutral-900 sm:text-lg">
             {money(spent._sum.total ?? 0)}
           </p>
-        </Card>
-        <Card className="col-span-2 p-4 sm:col-span-1">
+        </div>
+        <div className="px-4 py-3">
           <p className="text-xs text-neutral-400">Последний заказ</p>
           {lastOrder ? (
-            <Link href={`/shop/orders/${lastOrder.id}`} className="mt-1 block">
-              <span className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-neutral-900">
-                  №{lastOrder.number} · {money(lastOrder.total)}
-                </span>
-                <StatusBadge status={lastOrder.status} />
+            <Link
+              href={`/shop/orders/${lastOrder.id}`}
+              className="mt-0.5 flex flex-wrap items-center gap-1.5"
+            >
+              <span className="text-lg font-bold text-neutral-900">
+                №{lastOrder.number}
               </span>
-              <span className="text-xs text-neutral-400">
-                {formatDateTime(lastOrder.createdAt)}
-              </span>
+              <StatusBadge status={lastOrder.status} />
             </Link>
           ) : (
-            <p className="mt-1 text-sm text-neutral-400">Ещё не было</p>
+            <p className="mt-0.5 text-sm text-neutral-400">Ещё не было</p>
           )}
+        </div>
+      </Card>
+
+      {/* One-tap reorder */}
+      {lastOrder && repeatItems.length > 0 && (
+        <Card className="mb-5 p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="flex items-center gap-2 text-sm font-semibold text-neutral-900">
+                <RotateCcw size={15} className="text-brand-600" />
+                Заказать как в прошлый раз
+              </p>
+              <p className="mt-1 truncate text-xs text-neutral-400">
+                №{lastOrder.number} от {formatDateTime(lastOrder.createdAt)} ·{" "}
+                {lastOrder.items.length} поз. · {money(lastOrder.total)}
+              </p>
+              <p className="mt-1 line-clamp-1 text-xs text-neutral-500">
+                {lastOrder.items.map((i) => i.productName).join(", ")}
+              </p>
+            </div>
+            <RepeatOrderButton items={repeatItems} />
+          </div>
         </Card>
-      </div>
+      )}
+
+      {/* Category quick tiles */}
+      {categories.length > 0 && (
+        <div className="mb-5">
+          <div className="mb-2.5 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-neutral-900">Категории</h2>
+            <Link
+              href="/shop/catalog"
+              className="text-sm font-medium text-brand-700 hover:text-brand-800"
+            >
+              Весь каталог →
+            </Link>
+          </div>
+          <div className="-mx-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+            <div className="flex w-max gap-2.5">
+              {categories.map((c) => (
+                <Link
+                  key={c.id}
+                  href={`/shop/catalog?category=${c.id}`}
+                  className="flex w-24 shrink-0 flex-col items-center gap-1.5 rounded-2xl bg-white px-2 py-3 text-center ring-1 ring-brand-950/5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md hover:ring-brand-200"
+                >
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-xl">
+                    {CATEGORY_EMOJI[c.name] ?? "🧺"}
+                  </span>
+                  <span className="line-clamp-2 text-[11px] font-medium leading-tight text-neutral-700">
+                    {c.name}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Bika learning progress */}
       <Card className="mb-6 overflow-hidden">
@@ -163,7 +270,7 @@ export default async function ShopHome() {
               </p>
               <Link
                 href="/shop/catalog"
-                className="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-800"
+                className="mt-3 inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-brand-500 to-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-brand-600/25 hover:from-brand-600 hover:to-brand-700"
               >
                 Открыть каталог
                 <ArrowRight size={16} />
@@ -222,7 +329,7 @@ export default async function ShopHome() {
       {/* Catalog CTA */}
       <Link
         href="/shop/catalog"
-        className="flex items-center justify-between rounded-xl bg-white p-4 ring-1 ring-neutral-950/5 shadow-sm transition-shadow hover:shadow-md"
+        className="flex items-center justify-between rounded-2xl bg-white p-4 ring-1 ring-brand-950/5 shadow-sm transition-all hover:shadow-md hover:ring-brand-200"
       >
         <div>
           <p className="text-sm font-semibold text-neutral-900">Каталог товаров</p>

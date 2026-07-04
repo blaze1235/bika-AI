@@ -123,7 +123,7 @@ export function CartClient({ defaultAddress }: { defaultAddress: string }) {
         Корзина
       </h1>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
           {groups.map((group) => (
             <Card key={group.name}>
@@ -132,50 +132,54 @@ export function CartClient({ defaultAddress }: { defaultAddress: string }) {
               </p>
               <ul className="divide-y divide-neutral-50">
                 {group.items.map((item) => (
-                  <li key={item.productId} className="flex items-center gap-3 px-4 py-3">
-                    <ProductThumb name={item.name} imageUrl={item.imageUrl} size={44} />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-neutral-900">
-                        {item.name}
-                      </p>
-                      <p className="text-xs text-neutral-400">
-                        {money(item.price)} / {item.unit}
-                      </p>
-                    </div>
+                  <li key={item.productId} className="px-4 py-3">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                      <ProductThumb name={item.name} imageUrl={item.imageUrl} size={44} />
+                      <div className="min-w-0 flex-1 basis-40">
+                        <p className="line-clamp-2 text-sm font-medium leading-snug text-neutral-900">
+                          {item.name}
+                        </p>
+                        <p className="text-xs text-neutral-400">
+                          {money(item.price)} / {item.unit}
+                        </p>
+                      </div>
 
-                    <div className="flex items-center gap-1 rounded-lg bg-neutral-50 px-1 py-0.5 ring-1 ring-neutral-200">
-                      <button
-                        onClick={() => setQty(item.productId, item.qty - 1)}
-                        className="rounded-md p-1 text-neutral-500 hover:bg-neutral-200 cursor-pointer"
-                        aria-label="Убавить"
-                      >
-                        <Minus size={14} />
-                      </button>
-                      <span className="min-w-7 text-center text-sm font-semibold">
-                        {item.qty}
-                      </span>
-                      <button
-                        onClick={() =>
-                          (item.stock === null || item.qty < item.stock) &&
-                          add(item, 1)
-                        }
-                        className="rounded-md p-1 text-neutral-500 hover:bg-neutral-200 cursor-pointer"
-                        aria-label="Добавить"
-                      >
-                        <Plus size={14} />
-                      </button>
-                    </div>
+                      <div className="ml-auto flex items-center gap-2">
+                        <div className="flex items-center gap-1 rounded-lg bg-neutral-50 px-1 py-0.5 ring-1 ring-neutral-200">
+                          <button
+                            onClick={() => setQty(item.productId, item.qty - 1)}
+                            className="rounded-md p-1 text-neutral-500 hover:bg-neutral-200 cursor-pointer"
+                            aria-label="Убавить"
+                          >
+                            <Minus size={14} />
+                          </button>
+                          <span className="min-w-7 text-center text-sm font-semibold">
+                            {item.qty}
+                          </span>
+                          <button
+                            onClick={() =>
+                              (item.stock === null || item.qty < item.stock) &&
+                              add(item, 1)
+                            }
+                            className="rounded-md p-1 text-neutral-500 hover:bg-neutral-200 cursor-pointer"
+                            aria-label="Добавить"
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
 
-                    <p className="w-24 shrink-0 text-right text-sm font-semibold text-neutral-900">
-                      {money(item.price * item.qty)}
-                    </p>
-                    <button
-                      onClick={() => remove(item.productId)}
-                      className="rounded-lg p-1.5 text-neutral-300 hover:bg-red-50 hover:text-red-500 cursor-pointer"
-                      aria-label="Удалить"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                        <p className="min-w-20 text-right text-sm font-semibold text-neutral-900">
+                          {money(item.price * item.qty)}
+                        </p>
+                        <button
+                          onClick={() => remove(item.productId)}
+                          className="rounded-lg p-1.5 text-neutral-300 hover:bg-red-50 hover:text-red-500 cursor-pointer"
+                          aria-label="Удалить"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
                   </li>
                 ))}
               </ul>

@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
-import { PageHeader, StatCard } from "@/components/portal-shell";
+import { PageHeader } from "@/components/portal-shell";
 import { Card } from "@/components/ui";
 import { StatusBadge } from "@/components/status-badge";
 import { money, formatDateTime } from "@/lib/format";
+import { cx } from "@/lib/cx";
 
 export const dynamic = "force-dynamic";
 
@@ -12,10 +13,13 @@ export default async function DistributorDashboard() {
   const session = await requireRole("DISTRIBUTOR");
   const my = { distributorId: session.userId };
 
-  const [pendingCount, orderCount, revenue, productCount, recent, topProducts] =
+  const [byStatus, revenue, productCount, recent, topProducts] =
     await Promise.all([
-      prisma.order.count({ where: { ...my, status: "PENDING" } }),
-      prisma.order.count({ where: my }),
+      prisma.order.groupBy({
+        by: ["status"],
+        where: my,
+        _count: true,
+      }),
       prisma.order.aggregate({
         _sum: { total: true },
         where: { ...my, status: { not: "CANCELLED" } },
@@ -39,6 +43,11 @@ export default async function DistributorDashboard() {
       }),
     ]);
 
+  const count = (s: string) => byStatus.find((b) => b.status === s)?._count ?? 0;
+  const pendingCount = count("PENDING");
+  const inWork = count("CONFIRMED") + count("SHIPPED");
+  const delivered = count("DELIVERED");
+
   return (
     <>
       <PageHeader
@@ -46,18 +55,38 @@ export default async function DistributorDashboard() {
         text="Ваши заказы, выручка и топ товаров"
       />
 
+      {/* Clickable order pipeline */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard
-          label="Новые заказы"
-          value={String(pendingCount)}
+        <PipelineCard
+          href="/distributor/orders?status=PENDING"
+          label="Новые"
+          value={pendingCount}
           sub={pendingCount > 0 ? "требуют подтверждения" : "всё обработано"}
+          highlight={pendingCount > 0}
         />
-        <StatCard label="Заказов всего" value={String(orderCount)} />
-        <StatCard label="Выручка" value={money(revenue._sum.total ?? 0)} sub="без отменённых" />
-        <StatCard label="Товаров в каталоге" value={String(productCount)} />
+        <PipelineCard
+          href="/distributor/orders?status=CONFIRMED"
+          label="В работе"
+          value={inWork}
+          sub="подтверждены и отправлены"
+        />
+        <PipelineCard
+          href="/distributor/orders?status=DELIVERED"
+          label="Доставлено"
+          value={delivered}
+        />
+        <div className="rounded-2xl bg-gradient-to-br from-brand-800 to-brand-600 p-4 shadow-md shadow-brand-900/20">
+          <p className="text-sm text-brand-100">Выручка</p>
+          <p className="mt-1 truncate text-2xl font-bold tracking-tight text-white">
+            {money(revenue._sum.total ?? 0)}
+          </p>
+          <p className="mt-1 text-xs text-brand-200/80">
+            {productCount} товаров в каталоге
+          </p>
+        </div>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card className="p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-neutral-900">Последние заказы</h2>
@@ -129,5 +158,48 @@ export default async function DistributorDashboard() {
         </Card>
       </div>
     </>
+  );
+}
+
+function PipelineCard({
+  href,
+  label,
+  value,
+  sub,
+  highlight,
+}: {
+  href: string;
+  label: string;
+  value: number;
+  sub?: string;
+  highlight?: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={cx(
+        "rounded-2xl p-4 ring-1 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md",
+        highlight
+          ? "bg-brand-50 ring-brand-200 hover:ring-brand-300"
+          : "bg-white ring-brand-950/5 hover:ring-brand-200"
+      )}
+    >
+      <p className={cx("text-sm", highlight ? "text-brand-700" : "text-neutral-500")}>
+        {label}
+      </p>
+      <p
+        className={cx(
+          "mt-1 text-2xl font-bold tracking-tight",
+          highlight ? "text-brand-800" : "text-neutral-900"
+        )}
+      >
+        {value}
+      </p>
+      {sub && (
+        <p className={cx("mt-1 text-xs", highlight ? "text-brand-600/80" : "text-neutral-400")}>
+          {sub}
+        </p>
+      )}
+    </Link>
   );
 }

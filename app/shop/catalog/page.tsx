@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
 import { EmptyState} from "@/components/ui";
 import { cx } from "@/lib/cx";
-import { ProductCard } from "@/components/product-card";
+import { ProductRow } from "@/components/product-card";
 import { CatalogSearch } from "./catalog-search";
 import { PackageSearch } from "lucide-react";
 
@@ -98,9 +98,9 @@ export default async function CatalogPage({
           text="Попробуйте изменить запрос или сбросить фильтры"
         />
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2">
           {products.map((p) => (
-            <ProductCard
+            <ProductRow
               key={p.id}
               product={{
                 id: p.id,
