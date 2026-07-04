@@ -46,10 +46,13 @@ export function ShopShell({
   return (
     <div className="min-h-dvh pb-20 md:pb-0">
       {/* Top header */}
-      <header className="sticky top-0 z-40 border-b border-neutral-200/70 bg-white/90 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-brand-100 bg-[#fffcf7]/90 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
-          <Link href="/shop" className="text-xl font-bold tracking-tight text-brand-800">
-            Bika<span className="text-brand-500">.</span>
+          <Link href="/shop" className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-brand-800">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 text-base shadow-sm">
+              🧺
+            </span>
+            Bika<span className="-ml-1 text-brand-500">.</span>
           </Link>
 
           {/* Desktop nav */}
@@ -63,8 +66,8 @@ export function ShopShell({
                   className={cx(
                     "relative flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                     isActive(item)
-                      ? "bg-brand-50 text-brand-800"
-                      : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800"
+                      ? "bg-brand-100 text-brand-900"
+                      : "text-neutral-500 hover:bg-brand-50 hover:text-brand-800"
                   )}
                 >
                   <Icon size={17} />
@@ -103,7 +106,7 @@ export function ShopShell({
       <main className="mx-auto max-w-5xl px-4 py-5 sm:py-7">{children}</main>
 
       {/* Bottom tab bar (mobile) */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-brand-100 bg-[#fffcf7]/95 backdrop-blur pb-[env(safe-area-inset-bottom)] md:hidden">
         <div className="grid grid-cols-4">
           {NAV.map((item) => {
             const Icon = item.icon;

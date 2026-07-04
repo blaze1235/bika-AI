@@ -22,17 +22,17 @@ export function Button({
   return (
     <button
       className={cx(
-        "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors cursor-pointer",
+        "inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all cursor-pointer",
         "disabled:opacity-50 disabled:cursor-not-allowed",
         size === "sm" && "px-3 py-1.5 text-sm",
         size === "md" && "px-4 py-2 text-sm",
         size === "lg" && "px-5 py-2.5 text-base",
         variant === "primary" &&
-          "bg-brand-700 text-white hover:bg-brand-800 active:bg-brand-900",
+          "bg-gradient-to-b from-brand-500 to-brand-600 text-white shadow-md shadow-brand-600/25 hover:from-brand-600 hover:to-brand-700 active:shadow-sm",
         variant === "secondary" &&
-          "bg-white text-neutral-800 ring-1 ring-neutral-200 hover:bg-neutral-50",
-        variant === "danger" && "bg-red-600 text-white hover:bg-red-700",
-        variant === "ghost" && "text-neutral-600 hover:bg-neutral-100",
+          "bg-white text-neutral-800 ring-1 ring-neutral-200 shadow-sm hover:bg-brand-50 hover:ring-brand-200",
+        variant === "danger" && "bg-red-600 text-white shadow-md shadow-red-600/25 hover:bg-red-700",
+        variant === "ghost" && "text-neutral-600 hover:bg-brand-50 hover:text-brand-800",
         className
       )}
       {...props}
@@ -47,9 +47,9 @@ export function Input({
   return (
     <input
       className={cx(
-        "w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm",
+        "w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2 text-sm shadow-sm",
         "placeholder:text-neutral-400",
-        "focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500",
+        "focus:outline-none focus:ring-2 focus:ring-brand-400/45 focus:border-brand-400",
         className
       )}
       {...props}
@@ -64,9 +64,9 @@ export function Textarea({
   return (
     <textarea
       className={cx(
-        "w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm",
+        "w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2 text-sm shadow-sm",
         "placeholder:text-neutral-400",
-        "focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500",
+        "focus:outline-none focus:ring-2 focus:ring-brand-400/45 focus:border-brand-400",
         className
       )}
       {...props}
@@ -81,8 +81,8 @@ export function Select({
   return (
     <select
       className={cx(
-        "w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm",
-        "focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500",
+        "w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2 text-sm shadow-sm",
+        "focus:outline-none focus:ring-2 focus:ring-brand-400/45 focus:border-brand-400",
         className
       )}
       {...props}
@@ -120,7 +120,7 @@ export function Card({
   return (
     <div
       className={cx(
-        "rounded-xl bg-white ring-1 ring-neutral-950/5 shadow-sm",
+        "rounded-2xl bg-white ring-1 ring-brand-950/5 shadow-sm shadow-brand-950/[0.04]",
         className
       )}
     >
@@ -214,8 +214,8 @@ export function EmptyState({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-neutral-200 bg-white/60 px-6 py-14 text-center">
-      {icon && <div className="mb-3 text-neutral-300">{icon}</div>}
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-brand-200 bg-white/60 px-6 py-14 text-center">
+      {icon && <div className="mb-3 text-brand-300">{icon}</div>}
       <p className="text-sm font-medium text-neutral-700">{title}</p>
       {text && <p className="mt-1 max-w-sm text-sm text-neutral-400">{text}</p>}
       {action && <div className="mt-4">{action}</div>}

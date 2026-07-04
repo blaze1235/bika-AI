@@ -36,20 +36,27 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-gradient-to-b from-brand-950 via-brand-900 to-brand-800 px-4">
-      <div className="w-full max-w-sm">
+    <div className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-brand-950 via-brand-900 to-brand-700 px-4">
+      {/* Warm glow accents */}
+      <div className="pointer-events-none absolute -top-32 right-[-10%] h-96 w-96 rounded-full bg-brand-500/25 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-[-20%] left-[-10%] h-96 w-96 rounded-full bg-brand-400/15 blur-3xl" />
+
+      <div className="relative w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-white">
-            Bika<span className="text-brand-400">.</span>
+          <span className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-400 to-brand-600 text-3xl shadow-lg shadow-brand-950/40">
+            🧺
+          </span>
+          <h1 className="text-4xl font-extrabold tracking-tight text-white">
+            Bika<span className="text-brand-300">.</span>
           </h1>
-          <p className="mt-2 text-sm text-brand-200/70">
+          <p className="mt-2 text-sm text-brand-100/80">
             Платформа заказов для магазинов и дистрибьюторов
           </p>
         </div>
 
         <form
           onSubmit={submit}
-          className="space-y-4 rounded-2xl bg-white p-6 shadow-xl"
+          className="space-y-4 rounded-3xl bg-white/95 p-6 shadow-2xl shadow-brand-950/40 backdrop-blur"
         >
           <Field label="Логин">
             <Input

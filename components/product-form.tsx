@@ -216,7 +216,7 @@ export function ProductFormModal({
             type="checkbox"
             checked={form.active}
             onChange={(e) => set({ active: e.target.checked })}
-            className="h-4 w-4 rounded border-neutral-300 accent-teal-700"
+            className="h-4 w-4 rounded border-neutral-300 accent-brand-600"
           />
           Товар активен (виден покупателям)
         </label>

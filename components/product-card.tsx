@@ -30,7 +30,7 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
   };
 
   return (
-    <div className="flex flex-col rounded-xl bg-white p-3 ring-1 ring-neutral-950/5 shadow-sm transition-shadow hover:shadow-md">
+    <div className="group flex flex-col rounded-2xl bg-white p-3 ring-1 ring-brand-950/5 shadow-sm shadow-brand-950/[0.04] transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-brand-600/10 hover:ring-brand-200">
       <Link href={`/shop/product/${product.id}`} className="flex flex-1 flex-col">
         <div className="mb-3 flex justify-center">
           <ProductThumb
@@ -46,7 +46,7 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
         <p className="mt-0.5 text-xs text-neutral-400">
           {product.distributorName} · за {UNIT_LABELS[product.unit]}
         </p>
-        <p className="mb-3 mt-auto pt-2 text-base font-bold text-neutral-900">
+        <p className="mb-3 mt-auto pt-2 text-base font-bold text-brand-800">
           {money(product.price)}
         </p>
       </Link>
