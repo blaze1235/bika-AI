@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
 import { PageHeader } from "@/components/portal-shell";
 import { Card, EmptyState } from "@/components/ui";
+import { ViewToggleLinks, type ViewMode } from "@/components/view-toggle";
 import { money, formatDate } from "@/lib/format";
 import { Store } from "lucide-react";
 
@@ -11,8 +12,14 @@ export const dynamic = "force-dynamic";
  * Buyers of this distributor — derived from order history
  * (everyone who has placed at least one order).
  */
-export default async function DistributorBuyersPage() {
+export default async function DistributorBuyersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string }>;
+}) {
   const session = await requireRole("DISTRIBUTOR");
+  const { view: viewParam } = await searchParams;
+  const view: ViewMode = viewParam === "grid" ? "grid" : "list";
 
   const grouped = await prisma.order.groupBy({
     by: ["buyerId"],
@@ -47,6 +54,11 @@ export default async function DistributorBuyersPage() {
       <PageHeader
         title="Ваши покупатели"
         text="Магазины и заведения, которые заказывали у вас"
+        action={
+          rows.length > 0 && (
+            <ViewToggleLinks view={view} hrefList="/distributor/buyers?view=list" hrefGrid="/distributor/buyers?view=grid" />
+          )
+        }
       />
       {rows.length === 0 ? (
         <EmptyState
@@ -54,6 +66,26 @@ export default async function DistributorBuyersPage() {
           title="Покупателей пока нет"
           text="Здесь появятся магазины, которые сделают заказ на ваши товары"
         />
+      ) : view === "grid" ? (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {rows.map((r) => (
+            <Card key={r.id} className="p-4">
+              <p className="font-medium text-neutral-900">{r.businessName ?? r.name}</p>
+              <p className="text-xs text-neutral-400">
+                {r.name}
+                {r.address ? ` · ${r.address}` : ""}
+              </p>
+              <div className="mt-3 flex items-center justify-between border-t border-neutral-100 pt-3 text-sm">
+                <span className="text-neutral-500">{r.phone ?? "—"}</span>
+                <span className="font-mono font-semibold text-neutral-900">{money(r.total)}</span>
+              </div>
+              <div className="mt-1 flex items-center justify-between text-xs text-neutral-400">
+                <span>{r.orderCount} заказ(ов)</span>
+                <span>{r.lastOrder ? formatDate(r.lastOrder) : "—"}</span>
+              </div>
+            </Card>
+          ))}
+        </div>
       ) : (
         <Card className="scroll-x">
           <table className="w-full min-w-[640px] text-sm">

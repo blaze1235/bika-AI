@@ -4,28 +4,21 @@ import { requireRole } from "@/lib/auth";
 import { Card } from "@/components/ui";
 import { StatusBadge } from "@/components/status-badge";
 import { RepeatOrderButton, type RepeatItem } from "@/components/repeat-order";
-import { HomeSearch } from "./home-search";
+import { HomeBrowse } from "@/components/home-browse";
+import type { CatalogProduct } from "@/components/product-card";
 import { money, formatDateTime, UNIT_LABELS } from "@/lib/format";
 import { ArrowRight, Sparkles, RotateCcw } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 const LEARNING_TARGET = 10;
-
-const CATEGORY_EMOJI: Record<string, string> = {
-  "Напитки": "🥤",
-  "Молочные продукты": "🥛",
-  "Бакалея": "🌾",
-  "Снеки": "🍿",
-  "Бытовая химия": "🧼",
-  "Кондитерские изделия": "🍪",
-};
+const BROWSE_LIMIT = 40;
 
 export default async function ShopHome() {
   const session = await requireRole("BUYER");
   const buyerId = session.userId;
 
-  const [user, orderCount, lastOrder, categories] = await Promise.all([
+  const [user, orderCount, lastOrder, categories, popular] = await Promise.all([
     prisma.user.findUnique({
       where: { id: buyerId },
       select: { name: true, businessName: true },
@@ -42,6 +35,14 @@ export default async function ShopHome() {
     prisma.category.findMany({
       orderBy: { name: "asc" },
       where: { products: { some: { active: true, distributor: { active: true } } } },
+    }),
+    // Platform-wide best sellers, to open Home with genuinely popular items
+    prisma.orderItem.groupBy({
+      by: ["productId"],
+      where: { productId: { not: null }, order: { status: { not: "CANCELLED" } } },
+      _count: true,
+      orderBy: { _count: { productId: "desc" } },
+      take: BROWSE_LIMIT,
     }),
   ]);
 
@@ -80,6 +81,45 @@ export default async function ShopHome() {
     }
   }
 
+  // Popular products first (real order-volume ranking), topped up with the
+  // newest active products so Home never looks sparse for a fresh platform.
+  const popularIds = popular.map((p) => p.productId).filter((id): id is string => id !== null);
+  const popularProducts =
+    popularIds.length > 0
+      ? await prisma.product.findMany({
+          where: { id: { in: popularIds }, active: true, distributor: { active: true } },
+          include: {
+            category: { select: { name: true } },
+            distributor: { select: { id: true, businessName: true, name: true } },
+          },
+        })
+      : [];
+  const seen = new Set(popularProducts.map((p) => p.id));
+  const fillCount = BROWSE_LIMIT - popularProducts.length;
+  const fillProducts =
+    fillCount > 0
+      ? await prisma.product.findMany({
+          where: { id: { notIn: [...seen] }, active: true, distributor: { active: true } },
+          orderBy: { createdAt: "desc" },
+          take: fillCount,
+          include: {
+            category: { select: { name: true } },
+            distributor: { select: { id: true, businessName: true, name: true } },
+          },
+        })
+      : [];
+  const browseProducts: CatalogProduct[] = [...popularProducts, ...fillProducts].map((p) => ({
+    id: p.id,
+    name: p.name,
+    price: p.price,
+    unit: p.unit,
+    imageUrl: p.imageUrl,
+    stock: p.stock,
+    distributorId: p.distributor.id,
+    distributorName: p.distributor.businessName ?? p.distributor.name,
+    categoryName: p.category?.name ?? null,
+  }));
+
   const greeting = user?.businessName ?? user?.name ?? "";
   const learning = orderCount < LEARNING_TARGET;
 
@@ -95,30 +135,28 @@ export default async function ShopHome() {
         </p>
       </div>
 
-      <div className="mb-5">
-        <HomeSearch />
-      </div>
-
-      {/* AI banner */}
-      <Link
-        href="/shop/ai"
-        className="mb-5 block overflow-hidden rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800 p-4 text-on-primary shadow-lg shadow-brand-600/30 transition-transform hover:-translate-y-0.5"
-      >
-        <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider opacity-90">
-          <Sparkles size={13} /> Bika AI
-        </div>
-        <p className="mt-1.5 text-base font-bold leading-snug">
-          {orderCount === 0
-            ? "Сделайте первый заказ — Bika начнёт учиться"
-            : learning
-            ? `Bika изучает ваши заказы (${orderCount}/${LEARNING_TARGET})`
-            : "Ваши персональные подсказки готовы"}
-        </p>
-        <p className="mt-0.5 text-sm opacity-85">Нажмите, чтобы посмотреть →</p>
-      </Link>
+      <HomeBrowse categories={categories} products={browseProducts}>
+        {/* AI banner — same slot position as the design's Home screen */}
+        <Link
+          href="/shop/ai"
+          className="mt-4 block overflow-hidden rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800 p-4 text-on-primary shadow-lg shadow-brand-600/30 transition-transform hover:-translate-y-0.5"
+        >
+          <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider opacity-90">
+            <Sparkles size={13} /> Bika AI
+          </div>
+          <p className="mt-1.5 text-base font-bold leading-snug">
+            {orderCount === 0
+              ? "Сделайте первый заказ — Bika начнёт учиться"
+              : learning
+              ? `Bika изучает ваши заказы (${orderCount}/${LEARNING_TARGET})`
+              : "Ваши персональные подсказки готовы"}
+          </p>
+          <p className="mt-0.5 text-sm opacity-85">Нажмите, чтобы посмотреть →</p>
+        </Link>
+      </HomeBrowse>
 
       {/* Compact stat strip */}
-      <Card className="mb-5 grid grid-cols-2 divide-x divide-border">
+      <Card className="mb-5 mt-6 grid grid-cols-2 divide-x divide-border">
         <div className="px-4 py-3">
           <p className="text-xs text-muted">Всего заказов</p>
           <p className="mt-0.5 font-mono text-lg font-bold text-text">{orderCount}</p>
@@ -163,39 +201,6 @@ export default async function ShopHome() {
         </Card>
       )}
 
-      {/* Category quick tiles */}
-      {categories.length > 0 && (
-        <div className="mb-5">
-          <div className="mb-2.5 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-text">Категории</h2>
-            <Link
-              href="/shop/catalog"
-              className="text-sm font-medium text-brand-600 hover:text-brand-700"
-            >
-              Весь каталог →
-            </Link>
-          </div>
-          <div className="-mx-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
-            <div className="flex w-max gap-2.5">
-              {categories.map((c) => (
-                <Link
-                  key={c.id}
-                  href={`/shop/catalog?category=${c.id}`}
-                  className="flex w-24 shrink-0 flex-col items-center gap-1.5 rounded-2xl border border-border bg-card px-2 py-3 text-center shadow-[var(--shadow-card)] transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-card-lg)]"
-                >
-                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-soft text-xl">
-                    {CATEGORY_EMOJI[c.name] ?? "🧺"}
-                  </span>
-                  <span className="line-clamp-2 text-[11px] font-medium leading-tight text-text">
-                    {c.name}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Catalog CTA */}
       <Link
         href="/shop/catalog"
@@ -204,7 +209,7 @@ export default async function ShopHome() {
         <div>
           <p className="text-sm font-semibold text-text">Каталог товаров</p>
           <p className="text-xs text-faint">
-            Все товары ваших дистрибьюторов с поиском и фильтрами
+            Полный поиск и фильтры по всем дистрибьюторам
           </p>
         </div>
         <ArrowRight size={20} className="text-brand-600" />

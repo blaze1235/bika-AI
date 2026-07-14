@@ -3,8 +3,9 @@ import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
 import { EmptyState} from "@/components/ui";
 import { cx } from "@/lib/cx";
-import { ProductRow } from "@/components/product-card";
+import { ProductCard, ProductRow } from "@/components/product-card";
 import { CatalogSearch } from "./catalog-search";
+import { ViewToggleLinks, type ViewMode } from "@/components/view-toggle";
 import { PackageSearch } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -16,10 +17,11 @@ export const dynamic = "force-dynamic";
 export default async function CatalogPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; category?: string; distributor?: string }>;
+  searchParams: Promise<{ q?: string; category?: string; distributor?: string; view?: string }>;
 }) {
   await requireRole("BUYER");
-  const { q, category, distributor } = await searchParams;
+  const { q, category, distributor, view: viewParam } = await searchParams;
+  const view: ViewMode = viewParam === "grid" ? "grid" : "list";
 
   const [products, categories, distributors] = await Promise.all([
     prisma.product.findMany({
@@ -49,7 +51,7 @@ export default async function CatalogPage({
 
   const buildHref = (patch: Record<string, string | undefined>) => {
     const params = new URLSearchParams();
-    const merged = { q, category, distributor, ...patch };
+    const merged = { q, category, distributor, view, ...patch };
     for (const [key, value] of Object.entries(merged)) {
       if (value) params.set(key, value);
     }
@@ -59,9 +61,12 @@ export default async function CatalogPage({
 
   return (
     <>
-      <h1 className="mb-4 text-2xl font-bold tracking-tight text-neutral-900">
-        Каталог
-      </h1>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold tracking-tight text-neutral-900">
+          Каталог
+        </h1>
+        <ViewToggleLinks view={view} hrefList={buildHref({ view: "list" })} hrefGrid={buildHref({ view: "grid" })} />
+      </div>
 
       <CatalogSearch
         initialQuery={q ?? ""}
@@ -97,6 +102,25 @@ export default async function CatalogPage({
           title="Ничего не найдено"
           text="Попробуйте изменить запрос или сбросить фильтры"
         />
+      ) : view === "grid" ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {products.map((p) => (
+            <ProductCard
+              key={p.id}
+              product={{
+                id: p.id,
+                name: p.name,
+                price: p.price,
+                unit: p.unit,
+                imageUrl: p.imageUrl,
+                stock: p.stock,
+                distributorId: p.distributor.id,
+                distributorName: p.distributor.businessName ?? p.distributor.name,
+                categoryName: p.category?.name ?? null,
+              }}
+            />
+          ))}
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2">
           {products.map((p) => (

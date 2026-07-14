@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { PageHeader } from "@/components/portal-shell";
-import { OrdersTable, StatusFilter } from "@/components/orders-table";
+import { OrdersTable, OrdersGrid, StatusFilter } from "@/components/orders-table";
+import { ViewToggleLinks, type ViewMode } from "@/components/view-toggle";
 import { CsvButton } from "@/components/csv-button";
 import type { OrderStatus } from "@prisma/client";
 
@@ -17,12 +18,13 @@ const STATUSES: OrderStatus[] = [
 export default async function AdminOrdersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; view?: string }>;
 }) {
-  const { status } = await searchParams;
+  const { status, view: viewParam } = await searchParams;
   const statusFilter = STATUSES.includes(status as OrderStatus)
     ? (status as OrderStatus)
     : undefined;
+  const view: ViewMode = viewParam === "grid" ? "grid" : "list";
 
   const orders = await prisma.order.findMany({
     where: statusFilter ? { status: statusFilter } : undefined,
@@ -34,6 +36,17 @@ export default async function AdminOrdersPage({
     },
   });
 
+  const rows = orders.map((o) => ({
+    id: o.id,
+    number: o.number,
+    status: o.status,
+    total: o.total,
+    createdAt: o.createdAt,
+    itemCount: o._count.items,
+    buyerLabel: o.buyer.businessName ?? o.buyer.name,
+    distributorLabel: o.distributor.businessName ?? o.distributor.name,
+  }));
+
   return (
     <>
       <PageHeader
@@ -41,22 +54,19 @@ export default async function AdminOrdersPage({
         text="Все заказы платформы"
         action={<CsvButton />}
       />
-      <StatusFilter current={status} basePath="/admin/orders" />
-      <OrdersTable
-        hrefBase="/admin/orders"
-        showBuyer
-        showDistributor
-        orders={orders.map((o) => ({
-          id: o.id,
-          number: o.number,
-          status: o.status,
-          total: o.total,
-          createdAt: o.createdAt,
-          itemCount: o._count.items,
-          buyerLabel: o.buyer.businessName ?? o.buyer.name,
-          distributorLabel: o.distributor.businessName ?? o.distributor.name,
-        }))}
-      />
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <StatusFilter current={status} basePath="/admin/orders" />
+        <ViewToggleLinks
+          view={view}
+          hrefList={`/admin/orders?${status ? `status=${status}&` : ""}view=list`}
+          hrefGrid={`/admin/orders?${status ? `status=${status}&` : ""}view=grid`}
+        />
+      </div>
+      {view === "grid" ? (
+        <OrdersGrid hrefBase="/admin/orders" showBuyer showDistributor orders={rows} />
+      ) : (
+        <OrdersTable hrefBase="/admin/orders" showBuyer showDistributor orders={rows} />
+      )}
     </>
   );
 }

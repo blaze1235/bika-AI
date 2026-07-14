@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
 import { PageHeader } from "@/components/portal-shell";
-import { OrdersTable, StatusFilter } from "@/components/orders-table";
+import { OrdersTable, OrdersGrid, StatusFilter } from "@/components/orders-table";
+import { ViewToggleLinks, type ViewMode } from "@/components/view-toggle";
 import { CsvButton } from "@/components/csv-button";
 import type { OrderStatus } from "@prisma/client";
 
@@ -18,13 +19,14 @@ const STATUSES: OrderStatus[] = [
 export default async function DistributorOrdersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; view?: string }>;
 }) {
   const session = await requireRole("DISTRIBUTOR");
-  const { status } = await searchParams;
+  const { status, view: viewParam } = await searchParams;
   const statusFilter = STATUSES.includes(status as OrderStatus)
     ? (status as OrderStatus)
     : undefined;
+  const view: ViewMode = viewParam === "grid" ? "grid" : "list";
 
   const orders = await prisma.order.findMany({
     where: {
@@ -38,6 +40,16 @@ export default async function DistributorOrdersPage({
     },
   });
 
+  const rows = orders.map((o) => ({
+    id: o.id,
+    number: o.number,
+    status: o.status,
+    total: o.total,
+    createdAt: o.createdAt,
+    itemCount: o._count.items,
+    buyerLabel: o.buyer.businessName ?? o.buyer.name,
+  }));
+
   return (
     <>
       <PageHeader
@@ -45,20 +57,19 @@ export default async function DistributorOrdersPage({
         text="Входящие заказы от ваших покупателей"
         action={<CsvButton />}
       />
-      <StatusFilter current={status} basePath="/distributor/orders" />
-      <OrdersTable
-        hrefBase="/distributor/orders"
-        showBuyer
-        orders={orders.map((o) => ({
-          id: o.id,
-          number: o.number,
-          status: o.status,
-          total: o.total,
-          createdAt: o.createdAt,
-          itemCount: o._count.items,
-          buyerLabel: o.buyer.businessName ?? o.buyer.name,
-        }))}
-      />
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <StatusFilter current={status} basePath="/distributor/orders" />
+        <ViewToggleLinks
+          view={view}
+          hrefList={`/distributor/orders?${status ? `status=${status}&` : ""}view=list`}
+          hrefGrid={`/distributor/orders?${status ? `status=${status}&` : ""}view=grid`}
+        />
+      </div>
+      {view === "grid" ? (
+        <OrdersGrid hrefBase="/distributor/orders" showBuyer orders={rows} />
+      ) : (
+        <OrdersTable hrefBase="/distributor/orders" showBuyer orders={rows} />
+      )}
     </>
   );
 }

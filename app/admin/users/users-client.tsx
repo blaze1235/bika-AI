@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/portal-shell";
 import {
@@ -13,10 +13,14 @@ import {
   Modal,
   Select,
 } from "@/components/ui";
+import { ViewToggleButtons } from "@/components/view-toggle-buttons";
+import type { ViewMode } from "@/components/view-toggle";
 import { cx } from "@/lib/cx";
 import { ROLE_LABELS, formatDate } from "@/lib/format";
 import type { Role } from "@prisma/client";
 import { KeyRound, Pencil, Plus, Trash2 } from "lucide-react";
+
+const VIEW_STORAGE_KEY = "bika_view_users";
 
 type UserRow = {
   id: string;
@@ -66,6 +70,17 @@ export function UsersClient({ users }: { users: UserRow[] }) {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [view, setView] = useState<ViewMode>("list");
+
+  useEffect(() => {
+    const stored = localStorage.getItem(VIEW_STORAGE_KEY);
+    if (stored === "grid" || stored === "list") setView(stored);
+  }, []);
+
+  function changeView(v: ViewMode) {
+    setView(v);
+    localStorage.setItem(VIEW_STORAGE_KEY, v);
+  }
 
   const visible = filter === "ALL" ? users : users.filter((u) => u.role === filter);
   const set = (patch: Partial<FormState>) => setForm((f) => ({ ...f, ...patch }));
@@ -173,23 +188,82 @@ export function UsersClient({ users }: { users: UserRow[] }) {
         }
       />
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        {(["ALL", "BUYER", "DISTRIBUTOR", "ADMIN"] as const).map((r) => (
-          <button
-            key={r}
-            onClick={() => setFilter(r)}
-            className={cx(
-              "rounded-full px-3.5 py-1.5 text-sm font-medium cursor-pointer transition-colors",
-              filter === r
-                ? "bg-neutral-900 text-white"
-                : "bg-white text-neutral-600 ring-1 ring-neutral-200 hover:bg-neutral-50"
-            )}
-          >
-            {r === "ALL" ? "Все" : ROLE_LABELS[r]}
-          </button>
-        ))}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          {(["ALL", "BUYER", "DISTRIBUTOR", "ADMIN"] as const).map((r) => (
+            <button
+              key={r}
+              onClick={() => setFilter(r)}
+              className={cx(
+                "rounded-full px-3.5 py-1.5 text-sm font-medium cursor-pointer transition-colors",
+                filter === r
+                  ? "bg-neutral-900 text-white"
+                  : "bg-white text-neutral-600 ring-1 ring-neutral-200 hover:bg-neutral-50"
+              )}
+            >
+              {r === "ALL" ? "Все" : ROLE_LABELS[r]}
+            </button>
+          ))}
+        </div>
+        <ViewToggleButtons view={view} onChange={changeView} />
       </div>
 
+      {view === "grid" ? (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {visible.map((u) => (
+            <Card key={u.id} className={cx("p-4", !u.active && "opacity-50")}>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-neutral-900">
+                    {u.businessName ?? u.name}
+                  </p>
+                  <p className="truncate text-xs text-neutral-400">
+                    @{u.username}
+                    {u.businessName ? ` · ${u.name}` : ""}
+                  </p>
+                </div>
+                <Badge className={ROLE_BADGE[u.role]}>{ROLE_LABELS[u.role]}</Badge>
+              </div>
+              <div className="mt-3 flex items-center justify-between border-t border-neutral-100 pt-3 text-xs text-neutral-500">
+                <span>{u.phone ?? "—"}</span>
+                <span>
+                  {u.role === "DISTRIBUTOR"
+                    ? `${u.products} тов. · ${u.orders} зак.`
+                    : u.role === "BUYER"
+                      ? `${u.orders} зак.`
+                      : "—"}
+                </span>
+              </div>
+              <div className="mt-1 text-xs text-neutral-400">
+                Создан {formatDate(u.createdAt)}
+              </div>
+              <div className="mt-3 flex justify-end gap-1">
+                <IconBtn title="Изменить" onClick={() => openEdit(u)}>
+                  <Pencil size={16} />
+                </IconBtn>
+                <IconBtn title="Сбросить пароль" onClick={() => openPassword(u)}>
+                  <KeyRound size={16} />
+                </IconBtn>
+                <button
+                  title={u.active ? "Заблокировать" : "Разблокировать"}
+                  onClick={() => toggleActive(u)}
+                  className={cx(
+                    "rounded-lg px-2 py-1 text-xs font-medium cursor-pointer",
+                    u.active
+                      ? "text-amber-600 hover:bg-amber-50"
+                      : "text-emerald-600 hover:bg-emerald-50"
+                  )}
+                >
+                  {u.active ? "Блок" : "Вкл"}
+                </button>
+                <IconBtn title="Удалить" onClick={() => remove(u)} danger>
+                  <Trash2 size={16} />
+                </IconBtn>
+              </div>
+            </Card>
+          ))}
+        </div>
+      ) : (
       <Card className="scroll-x">
         <table className="w-full min-w-[720px] text-sm">
           <thead>
@@ -256,6 +330,7 @@ export function UsersClient({ users }: { users: UserRow[] }) {
           </tbody>
         </table>
       </Card>
+      )}
 
       {/* Create / Edit */}
       <Modal

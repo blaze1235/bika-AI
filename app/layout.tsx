@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import { prisma } from "@/lib/db";
+import { paletteCss, resolveActivePalette } from "@/lib/palette";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -29,6 +31,8 @@ export const viewport: Viewport = {
   themeColor: "#147a52",
 };
 
+export const dynamic = "force-dynamic";
+
 // Runs before paint so the stored theme applies without a flash of the
 // wrong palette. Kept inline (not a module) so it executes synchronously.
 const THEME_INIT_SCRIPT = `
@@ -43,11 +47,26 @@ const THEME_INIT_SCRIPT = `
 })();
 `;
 
-export default function RootLayout({
+async function loadPaletteCss(): Promise<string> {
+  try {
+    const rows = await prisma.setting.findMany({
+      where: { key: { in: ["palette_active_id", "palette_custom"] } },
+    });
+    const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+    return paletteCss(resolveActivePalette(map));
+  } catch {
+    // DB unreachable at render time — fall back to the CSS defaults.
+    return "";
+  }
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const paletteOverride = await loadPaletteCss();
+
   return (
     <html
       lang="ru"
@@ -56,6 +75,9 @@ export default function RootLayout({
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        {paletteOverride && (
+          <style dangerouslySetInnerHTML={{ __html: paletteOverride }} />
+        )}
       </head>
       <body className="min-h-full bg-bg-2 text-text">{children}</body>
     </html>

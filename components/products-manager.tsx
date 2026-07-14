@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/portal-shell";
 import { Badge, Button, Card, EmptyState, Input, Select} from "@/components/ui";
+import { ViewToggleButtons } from "@/components/view-toggle-buttons";
+import type { ViewMode } from "@/components/view-toggle";
 import { cx } from "@/lib/cx";
 import {
   ProductFormModal,
@@ -13,6 +15,8 @@ import {
 import { money, UNIT_LABELS } from "@/lib/format";
 import type { Unit } from "@prisma/client";
 import { Package, Pencil, Plus, Search, Trash2 } from "lucide-react";
+
+const VIEW_STORAGE_KEY = "bika_view_products";
 
 export type ProductRow = {
   id: string;
@@ -49,6 +53,17 @@ export function ProductsManager({
   const [distFilter, setDistFilter] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<ProductFormData>(emptyProduct);
+  const [view, setView] = useState<ViewMode>("list");
+
+  useEffect(() => {
+    const stored = localStorage.getItem(VIEW_STORAGE_KEY);
+    if (stored === "grid" || stored === "list") setView(stored);
+  }, []);
+
+  function changeView(v: ViewMode) {
+    setView(v);
+    localStorage.setItem(VIEW_STORAGE_KEY, v);
+  }
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -135,6 +150,7 @@ export function ProductsManager({
             ))}
           </Select>
         )}
+        <ViewToggleButtons view={view} onChange={changeView} />
       </div>
 
       {visible.length === 0 ? (
@@ -149,6 +165,54 @@ export function ProductsManager({
             </Button>
           }
         />
+      ) : view === "grid" ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {visible.map((p) => (
+            <div
+              key={p.id}
+              className={cx(
+                "flex flex-col rounded-2xl border border-border bg-card p-3 shadow-[var(--shadow-card)]",
+                !p.active && "opacity-45"
+              )}
+            >
+              <div className="mb-2 flex justify-center">
+                <ProductThumb name={p.name} imageUrl={p.imageUrl} size={72} rounded="rounded-xl" />
+              </div>
+              <p className="line-clamp-2 text-sm font-medium leading-snug text-neutral-900">
+                {p.name}
+              </p>
+              {isAdmin && (
+                <p className="mt-0.5 truncate text-xs text-neutral-400">{p.distributorName}</p>
+              )}
+              <p className="mt-1 font-mono text-sm font-bold text-neutral-900">
+                {money(p.price)}
+              </p>
+              <p className="text-xs text-neutral-400">
+                {p.stock === null ? "остаток не отслеживается" : p.stock === 0 ? (
+                  <span className="font-medium text-red-500">нет в наличии</span>
+                ) : (
+                  `остаток: ${p.stock}`
+                )}
+              </p>
+              <div className="mt-auto flex justify-end gap-1 pt-2">
+                <button
+                  title="Изменить"
+                  onClick={() => openEdit(p)}
+                  className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 cursor-pointer"
+                >
+                  <Pencil size={16} />
+                </button>
+                <button
+                  title="Удалить"
+                  onClick={() => remove(p)}
+                  className="rounded-lg p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-600 cursor-pointer"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
         <Card className="scroll-x">
           <table className="w-full min-w-[680px] text-sm">
