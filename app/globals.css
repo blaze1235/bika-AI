@@ -1,45 +1,123 @@
 @import "tailwindcss";
 
-@theme {
-  /* Brand palette — warm saffron / terracotta (bazaar) */
-  --color-brand-50: #fff8ed;
-  --color-brand-100: #ffefd3;
-  --color-brand-200: #ffdba6;
-  --color-brand-300: #ffc06e;
-  --color-brand-400: #ff9a33;
-  --color-brand-500: #fd7d0c;
-  --color-brand-600: #ee6002;
-  --color-brand-700: #c54706;
-  --color-brand-800: #9c380e;
-  --color-brand-900: #7e300f;
-  --color-brand-950: #441505;
+@custom-variant dark (&:where(.dark, .dark *));
 
-  /* Remap neutrals to warm stone so the whole UI feels sun-baked */
-  --color-neutral-50: #fafaf9;
-  --color-neutral-100: #f5f5f4;
-  --color-neutral-200: #e7e5e4;
-  --color-neutral-300: #d6d3d1;
-  --color-neutral-400: #a8a29e;
-  --color-neutral-500: #78716c;
-  --color-neutral-600: #57534e;
-  --color-neutral-700: #44403c;
-  --color-neutral-800: #292524;
-  --color-neutral-900: #1c1917;
-  --color-neutral-950: #0c0a09;
+:root {
+  --bg: #f4f1ea;
+  --bg-2: #eae5db;
+  --card: #ffffff;
+  --card-2: #f6f3ec;
+  --text: #1b1811;
+  --muted: #847d70;
+  --faint: #aaa393;
+  --border: #e6e0d4;
+  --border-2: #efeae0;
+  --primary: #147a52;
+  --primary-strong: #0f6644;
+  --primary-soft: #e4f1ea;
+  --on-primary: #ffffff;
+  --warn: #c2410c;
+  --warn-soft: #fbe8dd;
+}
 
-  --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI",
+.dark {
+  --bg: #0d0e0b;
+  --bg-2: #080906;
+  --card: #181a14;
+  --card-2: #20231b;
+  --text: #f1efe6;
+  --muted: #9b968a;
+  --faint: #6d6a5f;
+  --border: #2a2d24;
+  --border-2: #232620;
+  --primary: #3fcb8c;
+  --primary-strong: #5ad79f;
+  --primary-soft: rgba(63, 203, 140, 0.14);
+  --on-primary: #08130d;
+  --warn: #f5a06b;
+  --warn-soft: rgba(245, 160, 107, 0.14);
+}
+
+@theme inline {
+  /* Base palette overrides so bg-white / text-white / bg-black etc. adapt to theme */
+  --color-white: var(--card);
+  --color-black: var(--text);
+
+  /* Semantic surface tokens used directly (bg-bg, bg-card, text-muted, border-border, ...) */
+  --color-bg: var(--bg);
+  --color-bg-2: var(--bg-2);
+  --color-card: var(--card);
+  --color-card-2: var(--card-2);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-border: var(--border);
+  --color-border-2: var(--border-2);
+  --color-primary-strong: var(--primary-strong);
+  --color-primary-soft: var(--primary-soft);
+  --color-on-primary: var(--on-primary);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+
+  /* Brand ramp — derived from the single primary green so it stays
+     correct in both themes without a second hard-coded palette. */
+  --color-brand-50: color-mix(in srgb, var(--primary) 7%, var(--card));
+  --color-brand-100: color-mix(in srgb, var(--primary) 14%, var(--card));
+  --color-brand-200: color-mix(in srgb, var(--primary) 28%, var(--card));
+  --color-brand-300: color-mix(in srgb, var(--primary) 45%, var(--card));
+  --color-brand-400: color-mix(in srgb, var(--primary) 68%, var(--card));
+  --color-brand-500: var(--primary);
+  --color-brand-600: var(--primary);
+  --color-brand-700: var(--primary-strong);
+  --color-brand-800: var(--primary-strong);
+  --color-brand-900: color-mix(in srgb, var(--primary-strong) 78%, black);
+  --color-brand-950: color-mix(in srgb, var(--primary-strong) 60%, black);
+
+  /* Neutral ramp — mapped onto the warm cream / near-black surfaces */
+  --color-neutral-50: var(--card-2);
+  --color-neutral-100: var(--border-2);
+  --color-neutral-200: var(--border);
+  --color-neutral-300: var(--faint);
+  --color-neutral-400: var(--faint);
+  --color-neutral-500: var(--muted);
+  --color-neutral-600: var(--muted);
+  --color-neutral-700: var(--text);
+  --color-neutral-800: var(--text);
+  --color-neutral-900: var(--text);
+  --color-neutral-950: var(--text);
+
+  --font-sans: var(--font-jakarta), system-ui, -apple-system, "Segoe UI",
     Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-display: var(--font-manrope), var(--font-inter), system-ui, sans-serif;
+  --font-display: var(--font-jakarta), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo,
+    monospace;
+
+  --shadow-card: 0 1px 2px rgba(20, 16, 8, 0.05), 0 10px 30px rgba(20, 16, 8, 0.06);
+  --shadow-card-lg: 0 4px 12px rgba(20, 16, 8, 0.08), 0 24px 60px rgba(20, 16, 8, 0.12);
+}
+
+.dark {
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 34px rgba(0, 0, 0, 0.4);
+  --shadow-card-lg: 0 6px 16px rgba(0, 0, 0, 0.45), 0 30px 70px rgba(0, 0, 0, 0.55);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  background:
-    radial-gradient(1200px 500px at 85% -100px, #ffe9cf66, transparent 60%),
-    radial-gradient(900px 400px at -10% 0px, #ffefd340, transparent 55%),
-    #faf6f0;
-  color: #1c1917;
+  background: var(--bg-2);
+  color: var(--text);
   font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 h1,
@@ -51,6 +129,18 @@ h2 {
 .scroll-x {
   overflow-x: auto;
   scrollbar-width: thin;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--muted) 40%, transparent);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 /* Hide number input spinners */

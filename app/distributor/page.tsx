@@ -13,7 +13,11 @@ export default async function DistributorDashboard() {
   const session = await requireRole("DISTRIBUTOR");
   const my = { distributorId: session.userId };
 
-  const [byStatus, revenue, productCount, recent, topProducts] =
+  const weekStart = new Date();
+  weekStart.setHours(0, 0, 0, 0);
+  weekStart.setDate(weekStart.getDate() - 6);
+
+  const [byStatus, revenue, productCount, recent, topProducts, weekOrders] =
     await Promise.all([
       prisma.order.groupBy({
         by: ["status"],
@@ -41,12 +45,29 @@ export default async function DistributorDashboard() {
         orderBy: { _sum: { subtotal: "desc" } },
         take: 5,
       }),
+      prisma.order.findMany({
+        where: { ...my, status: { not: "CANCELLED" }, createdAt: { gte: weekStart } },
+        select: { createdAt: true, total: true },
+        take: 5000,
+      }),
     ]);
 
   const count = (s: string) => byStatus.find((b) => b.status === s)?._count ?? 0;
   const pendingCount = count("PENDING");
   const inWork = count("CONFIRMED") + count("SHIPPED");
   const delivered = count("DELIVERED");
+
+  const DAY_LABELS = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
+  const salesBars = Array.from({ length: 7 }, (_, i) => {
+    const day = new Date(weekStart);
+    day.setDate(weekStart.getDate() + i);
+    const total = weekOrders
+      .filter((o) => o.createdAt.toDateString() === day.toDateString())
+      .reduce((s, o) => s + o.total, 0);
+    return { label: DAY_LABELS[day.getDay()], total };
+  });
+  const weekTotal = salesBars.reduce((s, b) => s + b.total, 0);
+  const maxBar = Math.max(1, ...salesBars.map((b) => b.total));
 
   return (
     <>
@@ -75,18 +96,69 @@ export default async function DistributorDashboard() {
           label="Доставлено"
           value={delivered}
         />
-        <div className="rounded-2xl bg-gradient-to-br from-brand-800 to-brand-600 p-4 shadow-md shadow-brand-900/20">
-          <p className="text-sm text-brand-100">Выручка</p>
-          <p className="mt-1 truncate text-2xl font-bold tracking-tight text-white">
+        <div className="rounded-2xl bg-brand-600 p-4 shadow-md shadow-brand-600/30">
+          <p className="text-sm text-on-primary/75">Выручка</p>
+          <p className="mt-1 truncate font-mono text-2xl font-bold tracking-tight text-on-primary">
             {money(revenue._sum.total ?? 0)}
           </p>
-          <p className="mt-1 text-xs text-brand-200/80">
+          <p className="mt-1 text-xs text-on-primary/60">
             {productCount} товаров в каталоге
           </p>
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1.6fr_1fr]">
+        <Card className="p-5">
+          <div className="mb-5 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-neutral-900">Продажи за неделю</h2>
+            <span className="font-mono text-sm text-neutral-400">{money(weekTotal)}</span>
+          </div>
+          <div className="flex h-40 items-end justify-between gap-2.5">
+            {salesBars.map((b, i) => (
+              <div key={i} className="flex h-full flex-1 flex-col items-center justify-end gap-2">
+                <div
+                  className={cx(
+                    "w-full max-w-9 rounded-t-lg rounded-b-sm",
+                    b.total === maxBar && b.total > 0 ? "bg-brand-600" : "bg-brand-200"
+                  )}
+                  style={{ height: `${Math.max(4, (b.total / maxBar) * 100)}%` }}
+                />
+                <span className="text-xs font-medium text-neutral-400">{b.label}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="p-5">
+          <h2 className="mb-4 text-sm font-semibold text-neutral-900">
+            Топ товаров по выручке
+          </h2>
+          {topProducts.length === 0 ? (
+            <p className="text-sm text-neutral-400">Нет данных о продажах</p>
+          ) : (
+            <ul className="space-y-2.5">
+              {topProducts.map((p, i) => (
+                <li key={p.productName} className="flex items-center gap-3 text-sm">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-50 text-xs font-semibold text-brand-700">
+                    {i + 1}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-neutral-700">
+                    {p.productName}
+                  </span>
+                  <span className="shrink-0 text-xs text-neutral-400">
+                    {p._sum.quantity} ед.
+                  </span>
+                  <span className="shrink-0 font-mono font-medium text-neutral-800">
+                    {money(p._sum.subtotal ?? 0)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </div>
+
+      <div className="mt-6 grid grid-cols-1 gap-6">
         <Card className="p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-neutral-900">Последние заказы</h2>
@@ -123,34 +195,6 @@ export default async function DistributorDashboard() {
                       <StatusBadge status={o.status} />
                     </div>
                   </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-
-        <Card className="p-5">
-          <h2 className="mb-4 text-sm font-semibold text-neutral-900">
-            Топ товаров по выручке
-          </h2>
-          {topProducts.length === 0 ? (
-            <p className="text-sm text-neutral-400">Нет данных о продажах</p>
-          ) : (
-            <ul className="space-y-2.5">
-              {topProducts.map((p, i) => (
-                <li key={p.productName} className="flex items-center gap-3 text-sm">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-50 text-xs font-semibold text-brand-700">
-                    {i + 1}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-neutral-700">
-                    {p.productName}
-                  </span>
-                  <span className="shrink-0 text-xs text-neutral-400">
-                    {p._sum.quantity} ед.
-                  </span>
-                  <span className="shrink-0 font-medium text-neutral-800">
-                    {money(p._sum.subtotal ?? 0)}
-                  </span>
                 </li>
               ))}
             </ul>

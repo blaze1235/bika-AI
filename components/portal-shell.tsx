@@ -18,6 +18,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cx } from "@/lib/cx";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 /**
  * Icons are referenced by name because nav items come from server
@@ -53,12 +54,12 @@ export function PortalShell({
   items,
   title,
   subtitle,
-  accent = "bg-brand-700",
   children,
 }: {
   items: NavItem[];
   title: string;
   subtitle: string;
+  /** @deprecated kept for call-site compatibility; portal shell no longer uses a solid accent color */
   accent?: string;
   children: React.ReactNode;
 }) {
@@ -79,18 +80,25 @@ export function PortalShell({
     <nav className="flex flex-1 flex-col gap-1 px-3">
       {items.map((item) => {
         const Icon = ICONS[item.icon];
+        const active = isActive(item);
         return (
           <Link
             key={item.href}
             href={item.href}
             onClick={() => setOpen(false)}
             className={cx(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-              isActive(item)
-                ? "bg-white/15 text-white"
-                : "text-white/65 hover:bg-white/10 hover:text-white"
+              "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors",
+              active
+                ? "bg-primary-soft text-brand-800"
+                : "text-muted hover:bg-card-2 hover:text-text"
             )}
           >
+            <span
+              className={cx(
+                "h-2 w-2 rounded-[3px]",
+                active ? "bg-brand-600" : "bg-border"
+              )}
+            />
             <Icon size={18} strokeWidth={2} />
             {item.label}
           </Link>
@@ -100,19 +108,30 @@ export function PortalShell({
   );
 
   const brand = (
-    <div className="px-6 pb-6 pt-7">
-      <p className="text-xl font-bold tracking-tight text-white">
-        Bika<span className="text-brand-300">.</span>
-      </p>
-      <p className="mt-0.5 truncate text-xs text-white/50">{subtitle}</p>
+    <div className="flex items-center gap-2.5 px-6 pb-5 pt-6">
+      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-600 text-on-primary shadow-sm shadow-brand-600/40">
+        <span className="h-2.5 w-2.5 rounded-full border-2 border-on-primary" />
+      </span>
+      <div>
+        <p className="text-base font-extrabold leading-none tracking-tight text-text">
+          bika
+        </p>
+        <p className="mt-0.5 truncate text-[11px] font-medium text-muted">{title}</p>
+      </div>
+    </div>
+  );
+
+  const businessPanel = (
+    <div className="mx-3 mb-3 rounded-xl border border-border bg-card-2 p-3">
+      <p className="truncate text-xs font-bold text-text">{subtitle}</p>
     </div>
   );
 
   const logoutBtn = (
-    <div className="mt-auto px-3 pb-5">
+    <div className="px-3 pb-5">
       <button
         onClick={logout}
-        className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white/65 hover:bg-white/10 hover:text-white cursor-pointer"
+        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted hover:bg-card-2 hover:text-text cursor-pointer"
       >
         <LogOut size={18} />
         Выйти
@@ -121,59 +140,61 @@ export function PortalShell({
   );
 
   return (
-    <div className="min-h-dvh lg:flex">
+    <div className="min-h-dvh bg-bg lg:flex">
       {/* Desktop sidebar */}
-      <aside
-        className={cx(
-          "hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0",
-          accent
-        )}
-      >
+      <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 border-r border-border bg-card">
         {brand}
         {nav}
-        {logoutBtn}
+        <div className="mt-auto flex flex-col">
+          <div className="px-3 pb-2">
+            <ThemeToggle className="w-full" />
+          </div>
+          {businessPanel}
+          {logoutBtn}
+        </div>
       </aside>
 
       {/* Mobile top bar */}
-      <header
-        className={cx(
-          "sticky top-0 z-40 flex items-center justify-between px-4 py-3 lg:hidden",
-          accent
-        )}
-      >
-        <p className="text-lg font-bold text-white">
-          Bika<span className="text-brand-300">.</span>{" "}
-          <span className="text-sm font-normal text-white/60">{title}</span>
+      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-card px-4 py-3 lg:hidden">
+        <p className="flex items-center gap-2 text-base font-extrabold text-text">
+          bika
+          <span className="text-sm font-normal text-muted">{title}</span>
         </p>
-        <button
-          onClick={() => setOpen(!open)}
-          className="rounded-lg p-2 text-white/80 hover:bg-white/10"
-          aria-label="Меню"
-        >
-          {open ? <X size={22} /> : <Menu size={22} />}
-        </button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle className="h-9 w-9" />
+          <button
+            onClick={() => setOpen(!open)}
+            className="rounded-lg p-2 text-text hover:bg-card-2"
+            aria-label="Меню"
+          >
+            {open ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
       </header>
 
       {/* Mobile slide-over */}
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
-            className="absolute inset-0 bg-neutral-950/40"
+            className="absolute inset-0 bg-black/40"
             onClick={() => setOpen(false)}
           />
-          <div className={cx("absolute inset-y-0 left-0 flex w-72 flex-col", accent)}>
+          <div className="absolute inset-y-0 left-0 flex w-72 flex-col bg-card">
             <div className="flex items-center justify-between pr-3">
               {brand}
               <button
                 onClick={() => setOpen(false)}
-                className="rounded-lg p-2 text-white/70"
+                className="rounded-lg p-2 text-muted"
                 aria-label="Закрыть меню"
               >
                 <X size={22} />
               </button>
             </div>
             {nav}
-            {logoutBtn}
+            <div className="mt-auto flex flex-col">
+              {businessPanel}
+              {logoutBtn}
+            </div>
           </div>
         </div>
       )}
@@ -200,10 +221,10 @@ export function PageHeader({
   return (
     <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-neutral-900">
+        <h1 className="text-2xl font-bold tracking-tight text-text">
           {title}
         </h1>
-        {text && <p className="mt-1 text-sm text-neutral-500">{text}</p>}
+        {text && <p className="mt-1 text-sm text-muted">{text}</p>}
       </div>
       {action && <div className="shrink-0">{action}</div>}
     </div>
@@ -220,12 +241,12 @@ export function StatCard({
   sub?: string;
 }) {
   return (
-    <div className="rounded-xl bg-white p-5 ring-1 ring-neutral-950/5 shadow-sm">
-      <p className="text-sm text-neutral-500">{label}</p>
-      <p className="mt-1 text-2xl font-bold tracking-tight text-neutral-900">
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+      <p className="text-sm text-muted">{label}</p>
+      <p className="mt-1 font-mono text-2xl font-bold tracking-tight text-text">
         {value}
       </p>
-      {sub && <p className="mt-1 text-xs text-neutral-400">{sub}</p>}
+      {sub && <p className="mt-1 text-xs text-faint">{sub}</p>}
     </div>
   );
 }

@@ -74,7 +74,7 @@ export default async function ProductPage({
             </div>
 
             <div className="mt-4 flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-neutral-900">
+              <span className="font-mono text-2xl font-bold text-neutral-900">
                 {money(product.price)}
               </span>
               <span className="text-sm text-neutral-400">

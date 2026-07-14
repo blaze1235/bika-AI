@@ -35,7 +35,7 @@ export function RepeatOrderButton({ items }: { items: RepeatItem[] }) {
   return (
     <button
       onClick={repeat}
-      className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-brand-500 to-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-brand-600/25 transition-all hover:from-brand-600 hover:to-brand-700 cursor-pointer"
+      className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-on-primary shadow-md shadow-brand-600/25 transition-all hover:bg-brand-700 cursor-pointer"
     >
       <RotateCcw size={15} />
       Повторить заказ

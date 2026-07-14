@@ -188,13 +188,13 @@ await check("новый товар дистрибьютора виден в ка
   await page.locator("text=Ряженка 0.5л (тест)").first().waitFor({ timeout: 10000 });
 });
 
-await check("блок «Подсказки Bika» с прогрессом обучения", async () => {
-  await page.goto(`${BASE}/shop`);
-  await page.locator("text=Подсказки Bika").first().waitFor();
-  // Below 10 orders — progress bar; from 10 — "learned" state
-  const progress = page.locator("text=/\\d+\\/10 заказов/");
-  const learned = page.locator("text=Bika знает ваши привычки");
-  await progress.or(learned).first().waitFor({ timeout: 10000 });
+await check("AI-экран показывает прогресс обучения", async () => {
+  await page.goto(`${BASE}/shop/ai`);
+  await page.locator("text=Bika AI").first().waitFor();
+  // Below 10 orders — learning state; from 10 — "learned" state
+  const learning = page.locator("text=Учится на ваших заказах");
+  const learned = page.locator("text=Знает ваши привычки");
+  await learning.or(learned).first().waitFor({ timeout: 10000 });
 });
 
 console.log("\n— Ещё 2 заказа → появляются рекомендации —");
@@ -209,9 +209,9 @@ await check("делаем ещё 2 заказа (3+ для рекомендац�
   }
 });
 
-await check("рекомендации «вам может понадобиться» на главной", async () => {
-  await page.goto(`${BASE}/shop`);
-  await page.locator("text=вам может понадобиться").first().waitFor();
+await check("рекомендуемый заказ на AI-экране", async () => {
+  await page.goto(`${BASE}/shop/ai`);
+  await page.locator("text=Рекомендуемый заказ").first().waitFor();
   await page.locator("text=Молоко 1л").first().waitFor();
 });
 

@@ -265,10 +265,10 @@ export function ProductThumb({
   return (
     <div
       className={cx(
-        "flex shrink-0 items-center justify-center bg-brand-50 font-semibold text-brand-700",
+        "flex shrink-0 items-center justify-center border border-border-2 bg-card-2 font-mono font-semibold text-brand-600",
         rounded
       )}
-      style={{ width: size, height: size, fontSize: size * 0.4 }}
+      style={{ width: size, height: size, fontSize: size * 0.36 }}
     >
       {name.charAt(0).toUpperCase()}
     </div>

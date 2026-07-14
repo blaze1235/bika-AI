@@ -28,11 +28,11 @@ export function Button({
         size === "md" && "px-4 py-2 text-sm",
         size === "lg" && "px-5 py-2.5 text-base",
         variant === "primary" &&
-          "bg-gradient-to-b from-brand-500 to-brand-600 text-white shadow-md shadow-brand-600/25 hover:from-brand-600 hover:to-brand-700 active:shadow-sm",
+          "bg-brand-600 text-on-primary shadow-md shadow-brand-600/25 hover:bg-brand-700 active:shadow-sm",
         variant === "secondary" &&
-          "bg-white text-neutral-800 ring-1 ring-neutral-200 shadow-sm hover:bg-brand-50 hover:ring-brand-200",
-        variant === "danger" && "bg-red-600 text-white shadow-md shadow-red-600/25 hover:bg-red-700",
-        variant === "ghost" && "text-neutral-600 hover:bg-brand-50 hover:text-brand-800",
+          "bg-card text-text ring-1 ring-border shadow-sm hover:bg-card-2 hover:ring-brand-200",
+        variant === "danger" && "bg-red-600 text-[#fff] shadow-md shadow-red-600/25 hover:bg-red-700",
+        variant === "ghost" && "text-muted hover:bg-brand-50 hover:text-brand-800",
         className
       )}
       {...props}
@@ -47,8 +47,8 @@ export function Input({
   return (
     <input
       className={cx(
-        "w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2 text-sm shadow-sm",
-        "placeholder:text-neutral-400",
+        "w-full rounded-xl border border-border bg-card px-3.5 py-2 text-sm text-text shadow-sm",
+        "placeholder:text-faint",
         "focus:outline-none focus:ring-2 focus:ring-brand-400/45 focus:border-brand-400",
         className
       )}
@@ -64,8 +64,8 @@ export function Textarea({
   return (
     <textarea
       className={cx(
-        "w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2 text-sm shadow-sm",
-        "placeholder:text-neutral-400",
+        "w-full rounded-xl border border-border bg-card px-3.5 py-2 text-sm text-text shadow-sm",
+        "placeholder:text-faint",
         "focus:outline-none focus:ring-2 focus:ring-brand-400/45 focus:border-brand-400",
         className
       )}
@@ -81,7 +81,7 @@ export function Select({
   return (
     <select
       className={cx(
-        "w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2 text-sm shadow-sm",
+        "w-full rounded-xl border border-border bg-card px-3.5 py-2 text-sm text-text shadow-sm",
         "focus:outline-none focus:ring-2 focus:ring-brand-400/45 focus:border-brand-400",
         className
       )}
@@ -101,11 +101,11 @@ export function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-neutral-700">
+      <span className="mb-1.5 block text-sm font-medium text-text">
         {label}
       </span>
       {children}
-      {hint && <span className="mt-1 block text-xs text-neutral-400">{hint}</span>}
+      {hint && <span className="mt-1 block text-xs text-faint">{hint}</span>}
     </label>
   );
 }
@@ -120,7 +120,7 @@ export function Card({
   return (
     <div
       className={cx(
-        "rounded-2xl bg-white ring-1 ring-brand-950/5 shadow-sm shadow-brand-950/[0.04]",
+        "rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]",
         className
       )}
     >
@@ -176,21 +176,21 @@ export function Modal({
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div
-        className="absolute inset-0 bg-neutral-950/40 backdrop-blur-[2px]"
+        className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
         onClick={onClose}
       />
       <div
         className={cx(
-          "relative w-full max-h-[92vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white shadow-xl",
+          "relative w-full max-h-[92vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-card shadow-[var(--shadow-card-lg)]",
           wide ? "sm:max-w-2xl" : "sm:max-w-md",
           "sm:mx-4"
         )}
       >
-        <div className="sticky top-0 flex items-center justify-between border-b border-neutral-100 bg-white px-5 py-4 rounded-t-2xl">
-          <h2 className="text-base font-semibold">{title}</h2>
+        <div className="sticky top-0 flex items-center justify-between border-b border-border bg-card px-5 py-4 rounded-t-2xl">
+          <h2 className="text-base font-semibold text-text">{title}</h2>
           <button
             onClick={onClose}
-            className="rounded-lg p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 cursor-pointer"
+            className="rounded-lg p-1 text-faint hover:bg-card-2 hover:text-text cursor-pointer"
             aria-label="Закрыть"
           >
             <X size={20} />
@@ -214,10 +214,10 @@ export function EmptyState({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-brand-200 bg-white/60 px-6 py-14 text-center">
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card/60 px-6 py-14 text-center">
       {icon && <div className="mb-3 text-brand-300">{icon}</div>}
-      <p className="text-sm font-medium text-neutral-700">{title}</p>
-      {text && <p className="mt-1 max-w-sm text-sm text-neutral-400">{text}</p>}
+      <p className="text-sm font-medium text-text">{title}</p>
+      {text && <p className="mt-1 max-w-sm text-sm text-faint">{text}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>
   );
@@ -226,7 +226,7 @@ export function EmptyState({
 export function Spinner() {
   return (
     <div
-      className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-300 border-t-brand-600"
+      className="h-5 w-5 animate-spin rounded-full border-2 border-border border-t-brand-600"
       role="status"
       aria-label="Загрузка"
     />

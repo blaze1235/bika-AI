@@ -35,7 +35,7 @@ function toCartProduct(product: CatalogProduct): CartProduct {
  */
 export function ProductRow({ product }: { product: CatalogProduct }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-white p-3 ring-1 ring-brand-950/5 shadow-sm shadow-brand-950/[0.04] transition-all hover:shadow-md hover:ring-brand-200">
+    <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-[var(--shadow-card)] transition-all hover:-translate-y-0.5 hover:ring-1 hover:ring-brand-200">
       <Link
         href={`/shop/product/${product.id}`}
         className="flex min-w-0 flex-1 items-center gap-3"
@@ -47,13 +47,13 @@ export function ProductRow({ product }: { product: CatalogProduct }) {
           rounded="rounded-xl"
         />
         <div className="min-w-0">
-          <p className="line-clamp-2 text-sm font-medium leading-snug text-neutral-900">
+          <p className="line-clamp-2 text-sm font-medium leading-snug text-text">
             {product.name}
           </p>
-          <p className="truncate text-xs text-neutral-400">
+          <p className="truncate text-xs text-muted">
             {product.distributorName} · за {UNIT_LABELS[product.unit]}
           </p>
-          <p className="mt-0.5 text-sm font-bold text-brand-800">
+          <p className="mt-0.5 font-mono text-sm font-bold text-text">
             {money(product.price)}
           </p>
         </div>
@@ -70,23 +70,23 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
   const cartProduct = toCartProduct(product);
 
   return (
-    <div className="group flex flex-col rounded-2xl bg-white p-3 ring-1 ring-brand-950/5 shadow-sm shadow-brand-950/[0.04] transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-brand-600/10 hover:ring-brand-200">
+    <div className="group flex flex-col rounded-2xl border border-border bg-card p-3 shadow-[var(--shadow-card)] transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-card-lg)] hover:ring-1 hover:ring-brand-200">
       <Link href={`/shop/product/${product.id}`} className="flex flex-1 flex-col">
         <div className="mb-3 flex justify-center">
           <ProductThumb
             name={product.name}
             imageUrl={product.imageUrl}
             size={112}
-            rounded="rounded-lg"
+            rounded="rounded-xl"
           />
         </div>
-        <p className="line-clamp-2 text-sm font-medium leading-snug text-neutral-900">
+        <p className="line-clamp-2 text-sm font-medium leading-snug text-text">
           {product.name}
         </p>
-        <p className="mt-0.5 text-xs text-neutral-400">
+        <p className="mt-0.5 text-xs text-muted">
           {product.distributorName} · за {UNIT_LABELS[product.unit]}
         </p>
-        <p className="mb-3 mt-auto pt-2 text-base font-bold text-brand-800">
+        <p className="mb-3 mt-auto pt-2 font-mono text-base font-bold text-text">
           {money(product.price)}
         </p>
       </Link>

@@ -3,20 +3,23 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCart } from "@/components/cart-context";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { cx } from "@/lib/cx";
 import {
   Home,
   LayoutGrid,
   ShoppingCart,
   ClipboardList,
+  Sparkles,
   LogOut,
 } from "lucide-react";
 
 const NAV = [
   { href: "/shop", label: "Главная", icon: Home, exact: true },
   { href: "/shop/catalog", label: "Каталог", icon: LayoutGrid },
-  { href: "/shop/cart", label: "Корзина", icon: ShoppingCart, cart: true },
+  { href: "/shop/ai", label: "AI", icon: Sparkles, center: true },
   { href: "/shop/orders", label: "Заказы", icon: ClipboardList },
+  { href: "/shop/cart", label: "Корзина", icon: ShoppingCart, cart: true },
 ];
 
 /**
@@ -44,15 +47,15 @@ export function ShopShell({
   }
 
   return (
-    <div className="min-h-dvh pb-20 md:pb-0">
+    <div className="min-h-dvh pb-24 md:pb-0">
       {/* Top header */}
-      <header className="sticky top-0 z-40 border-b border-brand-100 bg-[#fffcf7]/90 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-border bg-bg/85 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
-          <Link href="/shop" className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-brand-800">
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 text-base shadow-sm">
-              🧺
+          <Link href="/shop" className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-text">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-600 text-on-primary shadow-sm shadow-brand-600/40">
+              <div className="h-2.5 w-2.5 rounded-full border-2 border-on-primary" />
             </span>
-            Bika<span className="-ml-1 text-brand-500">.</span>
+            bika
           </Link>
 
           {/* Desktop nav */}
@@ -66,8 +69,8 @@ export function ShopShell({
                   className={cx(
                     "relative flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                     isActive(item)
-                      ? "bg-brand-100 text-brand-900"
-                      : "text-neutral-500 hover:bg-brand-50 hover:text-brand-800"
+                      ? "bg-primary-soft text-brand-800"
+                      : "text-muted hover:bg-card-2 hover:text-text"
                   )}
                 >
                   <Icon size={17} />
@@ -79,13 +82,14 @@ export function ShopShell({
           </nav>
 
           <div className="flex items-center gap-2">
-            <span className="hidden max-w-40 truncate text-sm text-neutral-500 sm:block">
+            <span className="hidden max-w-40 truncate text-sm text-muted sm:block">
               {businessName}
             </span>
+            <ThemeToggle className="hidden md:flex h-9 w-9" />
             {/* Mobile cart shortcut */}
             <Link
               href="/shop/cart"
-              className="relative rounded-lg p-2 text-neutral-600 hover:bg-neutral-100 md:hidden"
+              className="relative rounded-lg p-2 text-text hover:bg-card-2 md:hidden"
               aria-label="Корзина"
             >
               <ShoppingCart size={21} />
@@ -93,7 +97,7 @@ export function ShopShell({
             </Link>
             <button
               onClick={logout}
-              className="rounded-lg p-2 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 cursor-pointer"
+              className="rounded-lg p-2 text-faint hover:bg-card-2 hover:text-text cursor-pointer"
               title="Выйти"
               aria-label="Выйти"
             >
@@ -106,18 +110,39 @@ export function ShopShell({
       <main className="mx-auto max-w-5xl px-4 py-5 sm:py-7">{children}</main>
 
       {/* Bottom tab bar (mobile) */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-brand-100 bg-[#fffcf7]/95 backdrop-blur pb-[env(safe-area-inset-bottom)] md:hidden">
-        <div className="grid grid-cols-4">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur pb-[env(safe-area-inset-bottom)] md:hidden">
+        <div className="grid grid-cols-5 items-center">
           {NAV.map((item) => {
             const Icon = item.icon;
             const active = isActive(item);
+            if (item.center) {
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="flex flex-col items-center gap-1 py-1.5 text-[10px] font-bold"
+                >
+                  <span
+                    className={cx(
+                      "-mt-5 flex h-12 w-12 items-center justify-center rounded-2xl shadow-lg shadow-brand-600/40",
+                      active ? "bg-brand-700" : "bg-brand-600"
+                    )}
+                  >
+                    <Icon size={22} className="text-on-primary" />
+                  </span>
+                  <span className={active ? "text-brand-700" : "text-muted"}>
+                    {item.label}
+                  </span>
+                </Link>
+              );
+            }
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cx(
                   "relative flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium",
-                  active ? "text-brand-700" : "text-neutral-400"
+                  active ? "text-brand-700" : "text-muted"
                 )}
               >
                 <span className="relative">
@@ -138,7 +163,7 @@ function CartBadge({ count, floating }: { count: number; floating?: boolean }) {
   return (
     <span
       className={cx(
-        "flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-brand-600 px-1 text-[10px] font-bold text-white",
+        "flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-warn px-1 text-[10px] font-bold text-white",
         floating && "absolute -right-2 -top-1.5"
       )}
     >

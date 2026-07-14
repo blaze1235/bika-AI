@@ -136,8 +136,8 @@ function CategoryChip({
       className={cx(
         "whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
         active
-          ? "bg-brand-700 text-white"
-          : "bg-white text-neutral-600 ring-1 ring-neutral-200 hover:bg-neutral-50"
+          ? "bg-brand-600 text-on-primary"
+          : "bg-card text-neutral-600 ring-1 ring-neutral-200 hover:bg-neutral-50"
       )}
     >
       {children}

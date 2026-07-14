@@ -79,7 +79,7 @@ export function CartClient({ defaultAddress }: { defaultAddress: string }) {
         <div className="mt-6 flex justify-center gap-3">
           <Link
             href="/shop/orders"
-            className="rounded-lg bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-800"
+            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-on-primary hover:bg-brand-700"
           >
             Мои заказы
           </Link>
@@ -107,7 +107,7 @@ export function CartClient({ defaultAddress }: { defaultAddress: string }) {
           action={
             <Link
               href="/shop/catalog"
-              className="rounded-lg bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-800"
+              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-on-primary hover:bg-brand-700"
             >
               Открыть каталог
             </Link>
@@ -168,7 +168,7 @@ export function CartClient({ defaultAddress }: { defaultAddress: string }) {
                           </button>
                         </div>
 
-                        <p className="min-w-20 text-right text-sm font-semibold text-neutral-900">
+                        <p className="min-w-20 text-right font-mono text-sm font-semibold text-neutral-900">
                           {money(item.price * item.qty)}
                         </p>
                         <button
@@ -224,7 +224,7 @@ export function CartClient({ defaultAddress }: { defaultAddress: string }) {
                 )}
                 <div className="flex justify-between pt-1 text-base font-bold text-neutral-900">
                   <span>Итого</span>
-                  <span>{money(total)}</span>
+                  <span className="font-mono">{money(total)}</span>
                 </div>
               </div>
 

@@ -36,7 +36,7 @@ export function AddToCart({
     return (
       <span
         className={cx(
-          "inline-flex w-full items-center justify-center rounded-lg bg-neutral-100 font-medium text-neutral-400",
+          "inline-flex w-full items-center justify-center rounded-xl bg-card-2 font-medium text-faint",
           size === "lg" ? "px-5 py-2.5 text-base" : "px-3 py-2 text-sm"
         )}
       >
@@ -53,7 +53,7 @@ export function AddToCart({
           add(product);
         }}
         className={cx(
-          "inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 font-medium text-white transition-colors hover:bg-brand-800 cursor-pointer",
+          "inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 font-medium text-on-primary shadow-sm shadow-brand-600/25 transition-colors hover:bg-brand-700 cursor-pointer",
           size === "lg" ? "px-5 py-2.5 text-base" : "px-3 py-2 text-sm"
         )}
       >
@@ -66,7 +66,7 @@ export function AddToCart({
   return (
     <div
       className={cx(
-        "flex w-full items-center justify-between rounded-lg bg-brand-50 ring-1 ring-brand-200",
+        "flex w-full items-center justify-between rounded-xl bg-primary-soft",
         size === "lg" ? "px-2 py-1.5" : "px-1.5 py-1"
       )}
       onClick={(e) => e.preventDefault()}
@@ -74,7 +74,7 @@ export function AddToCart({
       <StepBtn onClick={() => setQty(product.productId, qty - 1)} label="Убавить">
         <Minus size={16} />
       </StepBtn>
-      <span className="min-w-8 text-center text-sm font-semibold text-brand-900">
+      <span className="min-w-8 text-center font-mono text-sm font-semibold text-brand-800">
         {qty}
       </span>
       <StepBtn
@@ -104,7 +104,7 @@ function StepBtn({
       onClick={onClick}
       aria-label={label}
       disabled={disabled}
-      className="rounded-md p-1.5 text-brand-700 hover:bg-brand-100 disabled:opacity-40 cursor-pointer"
+      className="rounded-lg p-1.5 text-brand-700 hover:bg-brand-100 disabled:opacity-40 cursor-pointer"
     >
       {children}
     </button>
